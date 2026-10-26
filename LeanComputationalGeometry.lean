@@ -10,3 +10,4 @@ import LeanComputationalGeometry.Polygon.Region
 import LeanComputationalGeometry.Polygon.TriangleRegion
 import LeanComputationalGeometry.Polygon.Ear
 import LeanComputationalGeometry.Polygon.RemoveEar
+import LeanComputationalGeometry.Polygon.WindingTopology
