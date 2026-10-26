@@ -54,6 +54,11 @@ from either sibling library is a point here without conversion.
 | `RawPolygon.region P` | `OnBoundary P p ∨ windingNumber P p ≠ 0`: the closed region, nonzero rule |
 | `RawPolygon.openRegion P` | `¬ OnBoundary P p ∧ windingNumber P p ≠ 0`: the open region |
 | `SimplePolygon.toRegion`, `toOpenRegion`, `boundary` | the above for a simple polygon |
+| `RawPolygon.earTriangle P i` | `⟨prevVertex i, vertex i, nextVertex i⟩`, the vertex and its two neighbours |
+| `RawPolygon.earDiagonal P i` | the segment from `prevVertex i` to `nextVertex i` |
+| `ConvexVertex`, `ReflexVertex`, `LocallyDegenerate` | `orient (prevVertex i) (vertex i) (nextVertex i)` is `> 0`, `< 0`, `= 0` |
+| `RawPolygon.IsEar P i` | vertex `i` is convex and no other vertex lies in the closed ear triangle |
+| `RawPolygon.removeEar P i` | the ring without vertex `i`, its neighbours joined by the ear diagonal |
 
 Polygons are kept at three levels:
 
@@ -113,6 +118,9 @@ Each theorem states the cases it covers.
 | Barycentric coordinates: the orientations against the edges sum to the area and weight the vertices to the point | `Triangle.orient_sum`, `Triangle.orient_smul_sum` |
 | For a counterclockwise triangle, a point is in the closed triangle exactly when it is on the left of, or on, each edge | `Triangle.mem_toSet_iff_containsTest` |
 | Two edges of a nondegenerate triangle meet only at their shared vertex | `Triangle.segment_inter_segment_eq` |
+| Two segments from a common endpoint meet only there, unless one holds the other's far endpoint | `Triangle.segment_inter_segment_eq_of_not_mem` |
+| Leaving a counterclockwise triangle, a segment reaches its boundary | `Triangle.exists_onEdge_mem_segment` |
+| A segment with both ends outside a counterclockwise triangle that avoids two of its edges misses the triangle | `Triangle.disjoint_toSet_of_avoid` |
 | For a counterclockwise triangle, a point is strictly inside, Mathlib's `interior` of the convex hull, exactly when every edge orientation is positive | `Triangle.mem_interior_toSet_iff` |
 | ...on the boundary, Mathlib's `frontier`, exactly when it is in the triangle with some edge orientation zero | `Triangle.mem_frontier_toSet_iff` |
 | ...which is being on one of the three edges | `Triangle.mem_frontier_toSet_iff_edges`, `Triangle.mem_segment_iff_of_isCCW` |
@@ -160,6 +168,55 @@ For general simple polygons, that `toRegion` is the closure of `toOpenRegion`
 and `toOpenRegion` the interior of `toRegion` is the Jordan curve theorem for
 polygons, not proved here.
 
+### Ears
+
+An ear is given, not found: nothing here says that a polygon has one.
+
+| Result | Assumptions | Theorem |
+| --- | --- | --- |
+| Every vertex is convex, reflex or locally degenerate; reflex and degenerate vertices are not ears | none | `convex_or_reflex_or_locallyDegenerate`, `not_isEar_of_reflexVertex`, `not_isEar_of_locallyDegenerate` |
+| The diagonal of an ear meets the boundary only at its ends | simple, `4 ≤ n` | `IsEar.earDiagonal_relInterior_inter_boundary` |
+| ...edge by edge: edges away from the ear miss the ear triangle, and the edges just before and after meet the diagonal only at its ends | simple, `4 ≤ n` | `IsEar.disjoint_edge_earDiagonal`, `IsEar.edge_prev_prev_inter_earDiagonal`, `IsEar.earDiagonal_inter_edge_next` |
+| Removing a vertex leaves one vertex fewer | none | `removeEar_n` |
+| Edge sums split along the vertex: the smaller ring's, less the diagonal, plus the two removed edges | `2 ≤ n` | `sum_edges_removeEar` |
+| The shoelace sum is the smaller ring's plus the ear triangle's | `2 ≤ n` | `signedArea2_removeEar` |
+| The winding number at every point is the smaller ring's plus the ear triangle's | `2 ≤ n` | `windingNumber_removeEar` |
+| Cutting an ear off a simple polygon leaves a simple polygon | simple, `4 ≤ n` | `IsEar.isSimple_removeEar`, `SimplePolygon.removeEar` |
+| The closed region is the smaller ring's together with the ear triangle | convex vertex, and the ear triangle in the region | `region_removeEar`, `SimplePolygon.toRegion_removeEar` |
+
+The ear test excludes other vertices from the closed ear triangle, not only
+from its interior. With only the interior excluded, a vertex could sit on the
+diagonal, and cutting the ear would leave a ring that touches itself: in the
+L-shaped hexagon the corner at the origin is convex, but the inner corner lies
+on its diagonal (`Examples.ell_not_isEar_zero`).
+
+`removeEar` relabels the ring so that the ear comes last, a `Relabel` that
+changes nothing geometric (simplicity, edge sums, boundary and region are all
+kept), and drops the last vertex. The kept edges are the old edges other than
+the ear's two, and the last edge is the diagonal (`dropLast_edge_of_ne_last`,
+`dropLast_edge_last`). Simplicity then splits into old edges against old
+edges, which the polygon's simplicity covers, and the diagonal against old
+edges, which the diagonal theorem covers.
+
+The edge sums split because only three edges change: `prev → i` and
+`i → next` go, `prev → next` comes, and the ear triangle's edges are exactly
+the two that go and the diagonal reversed. The region identity follows from
+the winding identity: off the ear triangle its winding number is `0`, and the
+boundaries differ only by the ear triangle's edges.
+
+What is not proved, and what is missing for it:
+
+- that the ear triangle lies in the region (`(P.earTriangle i).toSet ⊆
+  P.region`, assumed by `region_removeEar`), and so that the diagonal does;
+- that the smaller ring's open region misses the interior of the ear
+  triangle.
+
+Both need facts about simple polygons of the Jordan curve kind: that the
+winding number is constant on connected sets off the boundary (the interior
+of an ear triangle is one, and the diagonal theorem keeps it off the
+boundary), and that off its boundary a simple polygon winds `0` or the sign
+of its signed area. With them the winding identity gives both statements.
+
 ### Examples
 
 `LeanComputationalGeometry/Examples/Basic.lean` runs concrete coordinates
@@ -170,7 +227,11 @@ shoelace sum. `LeanComputationalGeometry/Examples/Polygons.lean` checks a
 point inside, outside and on the boundary of a triangle, the unit square and
 a concave L-shaped hexagon (including a point in the notch, with winding
 number `0`), and shows the reversed square winding `-1` around its centre
-with the same region.
+with the same region. `LeanComputationalGeometry/Examples/Ears.lean` proves
+the square and the L simple, finds two ears of the square and one of the L,
+shows a reflex corner and a convex corner with a vertex on its diagonal not to
+be ears, and cuts ears off: the results are simple, with signed double areas
+`1` and `4`, and the winding numbers change by the ear's.
 
 ### On LeanGeospatial's shoelace
 
@@ -197,24 +258,38 @@ Mathlib. It does not check:
 
 ## Roadmap
 
-Roughly in order:
+| Step | Status |
+| --- | --- |
+| orientation | done |
+| segment intersection | done, every case |
+| triangle predicates | done: closed, strict interior, boundary |
+| signed area | done: translation, rotation, reversal |
+| winding / region semantics | done: winding numbers, boundary, closed and open regions, the triangle case end to end |
+| ear predicate | done |
+| ear removal | done |
+| local correctness | partial: simplicity, signed area and winding number done; the region identity assumes the ear triangle in the region; open-region disjointness missing |
+| Two Ears Theorem | next |
+| ear clipping recursion | later |
+| triangulation correctness | later |
+| polygons with holes | later |
+| clipping | later |
+| convex hull | later |
 
-1. orientation (done)
-2. segment intersection (done, every case)
-3. triangle predicates (done: closed, strict interior, boundary)
-4. signed area and the shoelace formula (done: translation, rotation,
-   reversal)
-5. simple polygons (the predicate exists; more structure next)
-6. winding number and point-in-polygon, and with them region semantics
-   (done: winding numbers, boundary, closed and open regions, and the
-   triangle case end to end; the general Jordan curve theorem for polygons
-   is not attempted)
-7. ears
-8. ear clipping triangulation
-9. triangulation correctness
-10. polygons with holes
-11. clipping
-12. convex hull
+The general Jordan curve theorem for polygons is not attempted.
+
+One step of ear clipping now has its shape:
+
+```
+SimplePolygon P, n ≥ 4
+    ↓  choose an ear i (IsEar)
+triangle P.earTriangle i  +  smaller SimplePolygon P.removeEar i, n - 1 vertices
+```
+
+with the signed area and the winding number of `P` the sums of the two
+parts', and the region of `P` their union once the ear triangle is known to
+lie in it. Recursing needs an ear to exist (the Two Ears Theorem), which is
+the next step; the vertex count falling by one (`removeEar_n`) is what will
+make the recursion terminate with `n - 2` triangles.
 
 For ear clipping the goal is, for a simple polygon as input and triangles as
 output, theorems that
@@ -228,21 +303,6 @@ output, theorems that
 The target is the classical algorithm's correctness. Mapbox Earcut's
 specifics (z-order hashing, hole elimination, fallbacks for invalid input)
 are out of scope at this stage.
-
-The ear predicate can already be stated with the present API. For a
-counterclockwise simple polygon, with `T i` the triangle
-`⟨P.vertex (P.prev i), P.vertex i, P.vertex (P.next i)⟩`:
-
-```lean
-def IsEar (P : SimplePolygon) (i : Fin P.1.n) : Prop :=
-  (T i).IsCCW ∧
-  (∀ j, j ≠ P.1.prev i → j ≠ i → j ≠ P.1.next i → ¬ (T i).StrictContainsTest (P.1.vertex j)) ∧
-  (T i).toSet ⊆ P.toRegion
-```
-
-It is not defined yet: whether the third clause follows from the first two
-for a simple polygon is the first theorem of the ear step, and it needs more
-of the region semantics than the triangle case.
 
 The winding number is the common ground of two ways of drawing a polygon:
 
@@ -301,12 +361,16 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Orientation.lean` | `cross`, `orient`, determinant, collinearity, affine independence |
 | `LeanComputationalGeometry/Segment.lean` | segments, intersection notions and tests, their correctness |
 | `LeanComputationalGeometry/Triangle.lean` | triangles, signed area, barycentric coordinates, membership |
+| `LeanComputationalGeometry/TriangleCrossing.lean` | how a segment can meet a triangle |
 | `LeanComputationalGeometry/Polygon/Basic.lean` | raw rings, reversal, simple polygons |
 | `LeanComputationalGeometry/Polygon/SignedArea.lean` | the shoelace sum, ring orientation and reversal |
 | `LeanComputationalGeometry/Polygon/Winding.lean` | edge crossing contributions and winding numbers |
 | `LeanComputationalGeometry/Polygon/Region.lean` | boundary, closed and open regions, `SimplePolygon.toRegion` |
 | `LeanComputationalGeometry/Polygon/TriangleRegion.lean` | a triangle's winding region is the closed triangle |
+| `LeanComputationalGeometry/Polygon/Ear.lean` | ear triangles and diagonals, convex and reflex vertices, `IsEar`, the diagonal of an ear |
+| `LeanComputationalGeometry/Polygon/RemoveEar.lean` | relabelling, `removeEar`, the area, winding and region splits, simplicity |
 | `LeanComputationalGeometry/Examples/Basic.lean` | worked examples: segments, triangles, signed area |
 | `LeanComputationalGeometry/Examples/Polygons.lean` | worked examples: inside, outside and boundary points of three polygons |
+| `LeanComputationalGeometry/Examples/Ears.lean` | worked examples: ears of the square and the L, and cutting them off |
 | `LeanComputationalGeometry/Axioms.lean` | the axiom audit |
 | `scripts/joint_check.sh` | the joint check with the sibling libraries |

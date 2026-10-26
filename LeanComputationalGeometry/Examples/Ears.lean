@@ -4,11 +4,12 @@ import LeanComputationalGeometry.Examples.Polygons
 /-!
 # Ears
 
-The unit square, a convex quadrilateral: a corner is an ear, and cutting it
-off leaves a simple triangle whose signed area and winding numbers are the
-square's less the ear's. The concave L-shaped hexagon: a convex corner whose
-ear triangle holds another vertex is not an ear, a reflex corner is not an
-ear, and a convex corner with an empty ear triangle is.
+The unit square, a convex quadrilateral: two opposite corners are ears, and
+cutting one off leaves a simple triangle whose signed area and winding
+numbers are the square's less the ear's. The concave L-shaped hexagon: a
+convex corner whose ear triangle holds another vertex is not an ear, a reflex
+corner is not an ear, and a convex corner with an empty ear triangle is;
+cutting it off leaves a simple pentagon.
 -/
 
 namespace ComputationalGeometry.Examples
@@ -24,6 +25,18 @@ theorem disjoint_segment_of_orient {a b c d : Point2D}
   Set.disjoint_left.mpr fun x h₁ h₂ =>
     h x (Segment.orient_eq_zero_of_mem ⟨a, b⟩ h₁)
       (Segment.orient_eq_zero_of_mem ⟨c, d⟩ h₂)
+
+/-- Two segments miss each other if no point is on both, judged by
+`mem_toSet_iff`: on the line, with each coordinate between the endpoints'. -/
+theorem disjoint_segment_of_coords {a b c d : Point2D}
+    (h : ∀ x : Point2D, orient a b x = 0 → x.x ∈ Set.uIcc a.x b.x →
+      x.y ∈ Set.uIcc a.y b.y →
+      orient c d x = 0 → x.x ∈ Set.uIcc c.x d.x → x.y ∈ Set.uIcc c.y d.y → False) :
+    Disjoint (segment ℝ a b) (segment ℝ c d) := by
+  refine Set.disjoint_left.mpr fun x h₁ h₂ => ?_
+  obtain ⟨e₁, x₁, y₁⟩ := (mem_toSet_iff ⟨a, b⟩ x).mp h₁
+  obtain ⟨e₂, x₂, y₂⟩ := (mem_toSet_iff ⟨c, d⟩ x).mp h₂
+  exact h x e₁ x₁ y₁ e₂ x₂ y₂
 
 /-! ## The unit square -/
 
@@ -77,6 +90,33 @@ theorem square_isEar_zero : square.IsEar 0 := by
   · rintro ⟨-, -, h⟩
     norm_num [square, orient_def] at h
   · exact absurd rfl h₁
+
+theorem square_prev_two : square.prev 2 = 1 := by
+  show (finRotate 4).symm 2 = 1
+  rw [Equiv.symm_apply_eq]
+  decide
+
+theorem square_earTriangle_two : square.earTriangle 2 = ⟨mk 1 0, mk 1 1, mk 0 1⟩ := by
+  simp [RawPolygon.earTriangle, RawPolygon.prevVertex, RawPolygon.nextVertex, square_prev_two,
+    RawPolygon.next, square]
+
+/-- The opposite corner is an ear too: a convex polygon has more than one. -/
+theorem square_isEar_two : square.IsEar 2 := by
+  have hT : (square.earTriangle 2).IsCCW := by
+    rw [square_earTriangle_two]
+    norm_num [Triangle.IsCCW, Triangle.signedArea2, orient_def]
+  refine ⟨hT, fun j h₁ h₂ h₃ => ?_⟩
+  rw [square_prev_two] at h₁
+  change j ≠ finRotate 4 2 at h₃
+  rw [finRotate_four_two] at h₃
+  rw [Triangle.mem_toSet_iff_containsTest hT, square_earTriangle_two]
+  change Fin 4 at j
+  fin_cases j
+  · rintro ⟨-, -, h⟩
+    norm_num [square, orient_def] at h
+  · exact absurd rfl h₁
+  · exact absurd rfl h₂
+  · exact absurd rfl h₃
 
 /-- Cutting it off leaves three vertices... -/
 example : (square.removeEar 0).n = 3 := square.removeEar_n 0
@@ -187,6 +227,31 @@ theorem ell_isEar_one : ell.IsEar 1 := by
   · exact absurd rfl h₂
   · exact absurd rfl h₃
   all_goals rintro ⟨-, -, h⟩; norm_num [ell, orient_def] at h
+
+/-- The L-shaped hexagon is a simple polygon. -/
+theorem ell_isSimple : ell.IsSimple := by
+  refine ⟨by show 3 ≤ 6; norm_num, fun i => ?_, fun i => ?_, fun i j hij h₁ h₂ => ?_⟩
+  · change Fin 6 at i
+    fin_cases i <;>
+      simp [RawPolygon.edge, RawPolygon.next, Segment.Nondegenerate, ell, ext_iff']
+  · change Fin 6 at i
+    fin_cases i <;> simp only [RawPolygon.edge, RawPolygon.next, Segment.toSet, ell] <;> simp <;>
+      exact Triangle.segment_inter_segment_eq (by norm_num [orient_def])
+  · change Fin 6 at i j
+    change finRotate 6 i ≠ j at h₁
+    change finRotate 6 j ≠ i at h₂
+    fin_cases i <;> fin_cases j <;> simp at hij h₁ h₂ <;>
+      simp only [RawPolygon.edge, RawPolygon.next, Segment.toSet, ell] <;> simp <;>
+      exact disjoint_segment_of_coords fun x e₁ x₁ y₁ e₂ x₂ y₂ => by
+        simp only [Set.mem_uIcc, x_mk, y_mk] at x₁ y₁ x₂ y₂
+        norm_num [orient_def] at e₁ e₂
+        rcases x₁ with ⟨_, _⟩ | ⟨_, _⟩ <;> rcases y₁ with ⟨_, _⟩ | ⟨_, _⟩ <;>
+          rcases x₂ with ⟨_, _⟩ | ⟨_, _⟩ <;> rcases y₂ with ⟨_, _⟩ | ⟨_, _⟩ <;>
+          linarith
+
+/-- Cutting the ear off the L leaves a simple pentagon. -/
+theorem ell_removeEar_isSimple : (ell.removeEar 1).IsSimple :=
+  ell_isEar_one.isSimple_removeEar ell_isSimple (by show 4 ≤ 6; norm_num)
 
 theorem ell_signedArea2 : ell.signedArea2 = 6 := by
   show ∑ i : Fin 6, cross (![mk 0 0, mk 2 0, mk 2 1, mk 1 1, mk 1 2, mk 0 2] i)

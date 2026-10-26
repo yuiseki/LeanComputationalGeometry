@@ -323,3 +323,15 @@ builds it.
 /-- info: 'ComputationalGeometry.Examples.ell_isEar_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.Examples.ell_isEar_one
+
+/-- info: 'ComputationalGeometry.Examples.square_isEar_two' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_isEar_two
+
+/-- info: 'ComputationalGeometry.Examples.ell_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ell_isSimple
+
+/-- info: 'ComputationalGeometry.Examples.ell_removeEar_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ell_removeEar_isSimple
