@@ -46,15 +46,29 @@ from either sibling library is a point here without conversion.
 | `RawPolygon` | `n` vertices `Fin n → Point2D`, joined cyclically by `finRotate` |
 | `RawPolygon.IsSimple` | at least three vertices, no zero-length edge, consecutive edges meeting only at their vertex, other edges disjoint |
 | `RawPolygon.signedArea2` | the shoelace sum `∑ cross (vertex i) (vertex (next i))` |
+| `RawPolygon.IsCCW`, `IsCW` | `0 < signedArea2`, `signedArea2 < 0` |
+| `RawPolygon.reverse` | the ring traversed the other way, its edges reversed (`reverse_edge`) |
+| `edgeContribution p a b` | the edge `a → b` on the horizontal ray from `p` to the right: `+1` upward (`a.y ≤ p.y < b.y`, `orient a b p > 0`), `-1` downward (`b.y ≤ p.y < a.y`, `orient a b p < 0`), else `0` |
+| `RawPolygon.windingNumber P p` | the sum of the edges' contributions |
+| `RawPolygon.OnBoundary P p` | `p` is on some edge segment |
+| `RawPolygon.region P` | `OnBoundary P p ∨ windingNumber P p ≠ 0`: the closed region, nonzero rule |
+| `RawPolygon.openRegion P` | `¬ OnBoundary P p ∧ windingNumber P p ≠ 0`: the open region |
+| `SimplePolygon.toRegion`, `toOpenRegion`, `boundary` | the above for a simple polygon |
 
-Polygons are kept at three levels, and only the first two exist yet:
+Polygons are kept at three levels:
 
 1. raw ring data (`RawPolygon`, built from a list by `RawPolygon.ofList`),
    about which nothing is assumed;
 2. simple polygons (`RawPolygon.IsSimple`, the subtype `SimplePolygon`);
-3. region semantics, the interior a simple polygon bounds. It is not
-   defined yet; winding numbers come next on the roadmap, and nothing so far
-   presumes them.
+3. region semantics: the closed and open regions under the nonzero winding
+   rule. They are defined for any ring, but this library takes them to mean
+   the region a polygon bounds only for simple polygons
+   (`SimplePolygon.toRegion`); for self-intersecting rings no claim is made.
+
+The half-open intervals in `edgeContribution` count a crossing through a
+vertex once. The winding number is not trusted on the boundary (an edge
+whose line passes through `p` counts `0`), so the boundary is added to the
+closed region and removed from the open one explicitly.
 
 Decisions that a program would make are stated as propositions over the
 reals (`CrossTest`, `IntersectTest`, `Triangle.ContainsTest`), separate from
@@ -99,6 +113,9 @@ Each theorem states the cases it covers.
 | Barycentric coordinates: the orientations against the edges sum to the area and weight the vertices to the point | `Triangle.orient_sum`, `Triangle.orient_smul_sum` |
 | For a counterclockwise triangle, a point is in the closed triangle exactly when it is on the left of, or on, each edge | `Triangle.mem_toSet_iff_containsTest` |
 | Two edges of a nondegenerate triangle meet only at their shared vertex | `Triangle.segment_inter_segment_eq` |
+| For a counterclockwise triangle, a point is strictly inside, Mathlib's `interior` of the convex hull, exactly when every edge orientation is positive | `Triangle.mem_interior_toSet_iff` |
+| ...on the boundary, Mathlib's `frontier`, exactly when it is in the triangle with some edge orientation zero | `Triangle.mem_frontier_toSet_iff` |
+| ...which is being on one of the three edges | `Triangle.mem_frontier_toSet_iff_edges`, `Triangle.mem_segment_iff_of_isCCW` |
 
 ### Polygons
 
@@ -107,11 +124,53 @@ Each theorem states the cases it covers.
 | A nondegenerate triangle is a simple polygon | `Triangle.isSimple_toPolygon` |
 | The shoelace sum does not depend on translation or on the starting vertex | `RawPolygon.signedArea2_translate`, `RawPolygon.signedArea2_rotate` |
 | For a triangle it is the orientation of the vertices | `Triangle.signedArea2_toPolygon` |
+| Reversing the ring reverses its edges and negates the shoelace sum, so it swaps counterclockwise and clockwise | `RawPolygon.reverse_edge`, `RawPolygon.signedArea2_reverse`, `RawPolygon.isCCW_reverse_iff`, `RawPolygon.isCW_reverse_iff` |
+
+### Winding numbers and regions
+
+| Result | Theorem |
+| --- | --- |
+| Horizontal edges, and edges whose line passes through `p`, do not count | `edgeContribution_of_horizontal`, `edgeContribution_of_orient_eq_zero` |
+| Edges at, above, below, or left of `p` do not count | `edgeContribution_of_below`, `edgeContribution_of_above`, `edgeContribution_of_right` |
+| Upward and downward crossings count with opposite signs, and reversing an edge negates its count | `edgeContribution_of_up`, `edgeContribution_of_down`, `edgeContribution_swap` |
+| The winding number does not depend on the starting vertex or on translation | `RawPolygon.windingNumber_rotate`, `RawPolygon.windingNumber_translate` |
+| Reversing the ring negates it | `RawPolygon.windingNumber_reverse` |
+| It vanishes below, above, or to the right of every vertex | `RawPolygon.windingNumber_eq_zero_of_below`, `_of_above`, `_of_right` |
+| The regions do not depend on the starting vertex or the direction | `RawPolygon.region_rotate`, `RawPolygon.region_reverse`, `RawPolygon.openRegion_rotate`, `RawPolygon.openRegion_reverse` |
+| Vertices and edge interiors are on the boundary; a point on one edge of a simple polygon is on no nonadjacent edge | `RawPolygon.onBoundary_vertex`, `RawPolygon.onBoundary_of_mem_relInterior`, `SimplePolygon.not_mem_edge_of_nonadjacent` |
+
+The first end-to-end check of the region semantics: for a nondegenerate
+triangle as a simple polygon, the winding region is the closed triangle and
+the open winding region is its interior.
+
+| Result | Theorem |
+| --- | --- |
+| `p ∈ (T.toSimplePolygon h).toRegion ↔ p ∈ T.toSet` | `Triangle.mem_toRegion_iff`, `Triangle.toRegion_eq` |
+| `p ∈ (T.toSimplePolygon h).toOpenRegion ↔ p ∈ interior T.toSet` | `Triangle.mem_toOpenRegion_iff`, `Triangle.toOpenRegion_eq` |
+| Off the boundary of a counterclockwise triangle, the winding number is nonzero exactly at the points strictly inside | `Triangle.winding3_ne_zero_iff` |
+
+The proof splits on which vertices lie at or below the ray's height. If all
+or none do, no edge counts. Otherwise a rotation of the triangle puts a vertex
+alone on its side at `a`, the two edges at `a` are the only ones that can
+count, and the y-coordinate of the barycentric formula,
+`o_bc (a.y - p.y) + o_ca (b.y - p.y) + o_ab (c.y - p.y) = 0`, decides each
+case. A clockwise triangle is handled through its reverse.
+
+For general simple polygons, that `toRegion` is the closure of `toOpenRegion`
+and `toOpenRegion` the interior of `toRegion` is the Jordan curve theorem for
+polygons, not proved here.
+
+### Examples
 
 `LeanComputationalGeometry/Examples/Basic.lean` runs concrete coordinates
-through these: crossing diagonals, a corner where two edges only touch,
-overlapping collinear segments, disjoint parallel segments, a point in and a
-point out of a triangle, and the unit square's shoelace sum.
+through the segment and triangle theorems: crossing diagonals, a corner where
+two edges only touch, overlapping collinear segments, disjoint parallel
+segments, a point in and a point out of a triangle, and the unit square's
+shoelace sum. `LeanComputationalGeometry/Examples/Polygons.lean` checks a
+point inside, outside and on the boundary of a triangle, the unit square and
+a concave L-shaped hexagon (including a point in the notch, with winding
+number `0`), and shows the reversed square winding `-1` around its centre
+with the same region.
 
 ### On LeanGeospatial's shoelace
 
@@ -142,11 +201,14 @@ Roughly in order:
 
 1. orientation (done)
 2. segment intersection (done, every case)
-3. triangle predicates (membership done; strict interior and boundary next)
-4. signed area and the shoelace formula (translation and rotation done;
-   reversal next)
+3. triangle predicates (done: closed, strict interior, boundary)
+4. signed area and the shoelace formula (done: translation, rotation,
+   reversal)
 5. simple polygons (the predicate exists; more structure next)
 6. winding number and point-in-polygon, and with them region semantics
+   (done: winding numbers, boundary, closed and open regions, and the
+   triangle case end to end; the general Jordan curve theorem for polygons
+   is not attempted)
 7. ears
 8. ear clipping triangulation
 9. triangulation correctness
@@ -166,6 +228,38 @@ output, theorems that
 The target is the classical algorithm's correctness. Mapbox Earcut's
 specifics (z-order hashing, hole elimination, fallbacks for invalid input)
 are out of scope at this stage.
+
+The ear predicate can already be stated with the present API. For a
+counterclockwise simple polygon, with `T i` the triangle
+`⟨P.vertex (P.prev i), P.vertex i, P.vertex (P.next i)⟩`:
+
+```lean
+def IsEar (P : SimplePolygon) (i : Fin P.1.n) : Prop :=
+  (T i).IsCCW ∧
+  (∀ j, j ≠ P.1.prev i → j ≠ i → j ≠ P.1.next i → ¬ (T i).StrictContainsTest (P.1.vertex j)) ∧
+  (T i).toSet ⊆ P.toRegion
+```
+
+It is not defined yet: whether the third clause follows from the first two
+for a simple polygon is the first theorem of the ear step, and it needs more
+of the region semantics than the triangle case.
+
+The winding number is the common ground of two ways of drawing a polygon:
+
+```
+SimplePolygon
+    │
+    ├── winding number / nonzero rule
+    │      → stencil fill (Gint-style rendering)
+    │
+    └── ear clipping
+           → triangle mesh (Earcut-style rendering)
+```
+
+A stencil-buffer fill colours a pixel by its winding number; a triangle mesh
+colours it by the triangle containing it. Both are correct when they agree
+with `SimplePolygon.toRegion`, which is what this library is building toward.
+This is motivation only: no rendering code is a dependency or is ported.
 
 A certificate verifier is a parallel goal: an external triangulator (Earcut
 or any other) produces candidate triangle indices, and a Lean-verified checker
@@ -207,8 +301,12 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Orientation.lean` | `cross`, `orient`, determinant, collinearity, affine independence |
 | `LeanComputationalGeometry/Segment.lean` | segments, intersection notions and tests, their correctness |
 | `LeanComputationalGeometry/Triangle.lean` | triangles, signed area, barycentric coordinates, membership |
-| `LeanComputationalGeometry/Polygon/Basic.lean` | raw rings, simple polygons |
-| `LeanComputationalGeometry/Polygon/SignedArea.lean` | the shoelace sum |
-| `LeanComputationalGeometry/Examples/Basic.lean` | worked examples |
+| `LeanComputationalGeometry/Polygon/Basic.lean` | raw rings, reversal, simple polygons |
+| `LeanComputationalGeometry/Polygon/SignedArea.lean` | the shoelace sum, ring orientation and reversal |
+| `LeanComputationalGeometry/Polygon/Winding.lean` | edge crossing contributions and winding numbers |
+| `LeanComputationalGeometry/Polygon/Region.lean` | boundary, closed and open regions, `SimplePolygon.toRegion` |
+| `LeanComputationalGeometry/Polygon/TriangleRegion.lean` | a triangle's winding region is the closed triangle |
+| `LeanComputationalGeometry/Examples/Basic.lean` | worked examples: segments, triangles, signed area |
+| `LeanComputationalGeometry/Examples/Polygons.lean` | worked examples: inside, outside and boundary points of three polygons |
 | `LeanComputationalGeometry/Axioms.lean` | the axiom audit |
 | `scripts/joint_check.sh` | the joint check with the sibling libraries |

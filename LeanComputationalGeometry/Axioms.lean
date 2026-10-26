@@ -1,5 +1,6 @@
 import LeanComputationalGeometry
 import LeanComputationalGeometry.Examples.Basic
+import LeanComputationalGeometry.Examples.Polygons
 
 /-!
 # Axiom audit
@@ -125,3 +126,99 @@ builds it.
 /-- info: 'ComputationalGeometry.Examples.square_signedArea2' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.Examples.square_signedArea2
+
+/-- info: 'ComputationalGeometry.RawPolygon.reverse_edge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.reverse_edge
+
+/-- info: 'ComputationalGeometry.RawPolygon.signedArea2_reverse' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.signedArea2_reverse
+
+/-- info: 'ComputationalGeometry.RawPolygon.isCCW_reverse_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.isCCW_reverse_iff
+
+/-- info: 'ComputationalGeometry.Triangle.mem_segment_iff_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.mem_segment_iff_of_isCCW
+
+/-- info: 'ComputationalGeometry.Triangle.mem_interior_toSet_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.mem_interior_toSet_iff
+
+/-- info: 'ComputationalGeometry.Triangle.mem_frontier_toSet_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.mem_frontier_toSet_iff
+
+/-- info: 'ComputationalGeometry.Triangle.mem_frontier_toSet_iff_edges' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.mem_frontier_toSet_iff_edges
+
+/-- info: 'ComputationalGeometry.edgeContribution_swap' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.edgeContribution_swap
+
+/-- info: 'ComputationalGeometry.edgeContribution_of_horizontal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.edgeContribution_of_horizontal
+
+/-- info: 'ComputationalGeometry.edgeContribution_of_orient_eq_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.edgeContribution_of_orient_eq_zero
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_rotate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_rotate
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_reverse' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_reverse
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_translate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_translate
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_eq_zero_of_right' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_eq_zero_of_right
+
+/-- info: 'ComputationalGeometry.RawPolygon.region_reverse' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.region_reverse
+
+/-- info: 'ComputationalGeometry.RawPolygon.region_rotate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.region_rotate
+
+/-- info: 'ComputationalGeometry.RawPolygon.not_mem_region_of_right' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.not_mem_region_of_right
+
+/-- info: 'ComputationalGeometry.Triangle.winding3_ne_zero_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.winding3_ne_zero_iff
+
+/-- info: 'ComputationalGeometry.Triangle.mem_region_toPolygon_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.mem_region_toPolygon_iff
+
+/-- info: 'ComputationalGeometry.Triangle.mem_toRegion_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.mem_toRegion_iff
+
+/-- info: 'ComputationalGeometry.Triangle.mem_toOpenRegion_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.mem_toOpenRegion_iff
+
+/-- info: 'ComputationalGeometry.Triangle.toRegion_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.toRegion_eq
+
+/-- info: 'ComputationalGeometry.Examples.ell_windingNumber_notch' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ell_windingNumber_notch
+
+/-- info: 'ComputationalGeometry.Examples.square_windingNumber_inside' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_windingNumber_inside

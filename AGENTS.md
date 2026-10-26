@@ -51,6 +51,12 @@ Guidance for coding agents (and people) working on LeanComputationalGeometry.
 - Say which cases a theorem covers. Degenerate cases (equal points, collinear
   points, endpoint contact) go into hypotheses such as `GeneralPosition`, or
   into theorems that cover them; they are not hidden.
+- Keep the three levels of polygon data apart: a `RawPolygon` is raw ring
+  data, `IsSimple` says it is a simple polygon, and `region` /
+  `openRegion` / `OnBoundary` give the regions under the nonzero winding
+  rule. Claims about "the region a polygon bounds" are made only for simple
+  polygons (`SimplePolygon.toRegion`); do not rely on `RawPolygon.region` for
+  self-intersecting rings.
 - No `sorry`, no `admit`, no `axiom` of your own. Stay within Lean's standard
   axioms (`propext`, `Classical.choice`, `Quot.sound`).
 - Prefer Mathlib's definitions (`segment`, `openSegment`, `convexHull`,
