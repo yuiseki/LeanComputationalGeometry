@@ -25,6 +25,25 @@ namespace ComputationalGeometry
 
 open Set
 
+/-- Reversing the order of `Fin n` turns the cyclic successor into the
+cyclic predecessor. -/
+theorem finRotate_rev_finRotate :
+    ∀ {n : ℕ} (i : Fin n), finRotate n (Fin.rev (finRotate n i)) = Fin.rev i
+  | 0, i => i.elim0
+  | 1, _ => Subsingleton.elim _ _
+  | k + 2, i => by
+    rw [finRotate_apply, finRotate_apply]
+    ext
+    have hi := i.isLt
+    simp only [Fin.val_add, Fin.val_rev, Fin.val_one]
+    rcases Nat.lt_or_ge i.val (k + 1) with h | h
+    · rw [Nat.mod_eq_of_lt (by omega : i.val + 1 < k + 2)]
+      rw [Nat.mod_eq_of_lt (by omega)]
+      omega
+    · have h' : i.val = k + 1 := by omega
+      rw [h', show k + 1 + 1 = k + 2 by rfl, Nat.mod_self]
+      simp
+
 /-- A ring of `n` vertices, joined cyclically. Raw data: nothing is assumed. -/
 structure RawPolygon where
   /-- The number of vertices. -/
@@ -42,6 +61,15 @@ def ofList (l : List Point2D) : RawPolygon := ⟨l.length, l.get⟩
 /-- The index of the next vertex, cyclically. -/
 def next (i : Fin P.n) : Fin P.n := finRotate P.n i
 
+/-- The index of the previous vertex, cyclically. -/
+def prev (i : Fin P.n) : Fin P.n := (finRotate P.n).symm i
+
+@[simp] theorem next_prev (i : Fin P.n) : P.next (P.prev i) = i :=
+  (finRotate P.n).apply_symm_apply i
+
+@[simp] theorem prev_next (i : Fin P.n) : P.prev (P.next i) = i :=
+  (finRotate P.n).symm_apply_apply i
+
 /-- The edge from vertex `i` to the next vertex. -/
 def edge (i : Fin P.n) : Segment := ⟨P.vertex i, P.vertex (P.next i)⟩
 
@@ -50,6 +78,32 @@ def translate (v : Point2D) : RawPolygon := ⟨P.n, fun i => P.vertex i + v⟩
 
 /-- The same ring, started one vertex later. -/
 def rotate : RawPolygon := ⟨P.n, P.vertex ∘ finRotate P.n⟩
+
+/-- The same ring, traversed the other way: vertex `i` of the reverse is
+vertex `rev i`. Its edges are the ring's edges, each reversed
+(`reverse_edge`). -/
+def reverse : RawPolygon := ⟨P.n, fun i => P.vertex (Fin.rev i)⟩
+
+/-- Reversal turns the cyclic successor into the cyclic predecessor. -/
+theorem rev_finRotate {n : ℕ} (i : Fin n) :
+    Fin.rev (finRotate n i) = (finRotate n).symm (Fin.rev i) := by
+  apply (finRotate n).injective
+  rw [finRotate_rev_finRotate, Equiv.apply_symm_apply]
+
+/-- The successor in the reverse ring is the predecessor in the ring. -/
+theorem rev_next_reverse (i : Fin P.n) : Fin.rev (P.reverse.next i) = P.prev (Fin.rev i) := by
+  have h := finRotate_rev_finRotate i
+  apply (finRotate P.n).injective
+  change finRotate P.n (Fin.rev (finRotate P.n i)) = finRotate P.n ((finRotate P.n).symm (Fin.rev i))
+  rw [h, Equiv.apply_symm_apply]
+
+/-- Each edge of the reverse ring is an edge of the ring, reversed: the edge
+sequence really is reversed, not only the vertex labels. -/
+theorem reverse_edge (i : Fin P.n) :
+    P.reverse.edge i = (P.edge (P.prev (Fin.rev i))).swap := by
+  simp only [edge, Segment.swap, next_prev]
+  congr 1
+  exact congrArg P.vertex (P.rev_next_reverse i)
 
 /-- A simple polygon: at least three vertices, no zero-length edge,
 consecutive edges meeting only at their shared vertex, and every other pair of

@@ -37,6 +37,29 @@ noncomputable def signedArea : ℝ := P.signedArea2 / 2
 /-- The ring turns counterclockwise. -/
 def IsCCW : Prop := 0 < P.signedArea2
 
+/-- The ring turns clockwise. -/
+def IsCW : Prop := P.signedArea2 < 0
+
+/-- Traversing the ring the other way negates its signed area. -/
+theorem signedArea2_reverse : P.reverse.signedArea2 = -P.signedArea2 := by
+  show ∑ i : Fin P.n, cross (P.vertex (Fin.rev i)) (P.vertex (Fin.rev (finRotate P.n i))) = _
+  simp only [rev_finRotate]
+  have hrev := Equiv.sum_comp Fin.revPerm
+    (fun j => cross (P.vertex j) (P.vertex ((finRotate P.n).symm j)))
+  simp only [Fin.revPerm_apply] at hrev
+  rw [hrev]
+  rw [← Equiv.sum_comp (finRotate P.n)
+    (fun j => cross (P.vertex j) (P.vertex ((finRotate P.n).symm j)))]
+  simp only [Equiv.symm_apply_apply, signedArea2, next]
+  rw [← Finset.sum_neg_distrib]
+  exact Finset.sum_congr rfl fun i _ => cross_comm _ _
+
+theorem isCCW_reverse_iff : P.reverse.IsCCW ↔ P.IsCW := by
+  rw [IsCCW, IsCW, signedArea2_reverse, neg_pos]
+
+theorem isCW_reverse_iff : P.reverse.IsCW ↔ P.IsCCW := by
+  rw [IsCCW, IsCW, signedArea2_reverse, neg_lt_zero]
+
 /-- Moving the ring does not change its signed area. -/
 theorem signedArea2_translate (v : Point2D) : (P.translate v).signedArea2 = P.signedArea2 := by
   show ∑ i : Fin P.n, cross (P.vertex i + v) (P.vertex (finRotate P.n i) + v) =
