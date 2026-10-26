@@ -60,6 +60,8 @@ from either sibling library is a point here without conversion.
 | `RawPolygon.IsEar P i` | vertex `i` is convex and no other vertex lies in the closed ear triangle |
 | `RawPolygon.removeEar P i` | the ring without vertex `i`, its neighbours joined by the ear diagonal |
 | `RawPolygon.WindsZeroOrOne P` | off the boundary, `windingNumber P p` is `0` or `1`; true for every counterclockwise simple polygon (`IsSimple.windsZeroOrOne_of_isCCW`) |
+| `RawPolygon.chain P i k` | the `k + 1` vertices from vertex `i` on, `k` edges of `P`, closed up by the segment back to vertex `i` |
+| `RawPolygon.IsDiagonal P i k` | `2 ≤ k`, `k + 2 ≤ n`, and the open segment from vertex `i` to the vertex `k` steps on lies in `openRegion P` |
 
 Polygons are kept at three levels:
 
@@ -195,6 +197,7 @@ is (next section).
 | Off the boundary the winding number is `0` or `1` everywhere, or `0` or `-1` everywhere; so at most `1` in absolute value | simple | `IsSimple.windingNumber_cases`, `IsSimple.abs_windingNumber_le_one` |
 | A counterclockwise simple polygon winds `0` or `1` times | simple, `IsCCW` | `IsSimple.windsZeroOrOne_of_isCCW`, `SimplePolygon.windsZeroOrOne_of_isCCW` |
 | A clockwise simple polygon winds `0` or `-1` times | simple, `IsCW` | `IsSimple.windingNumber_eq_zero_or_neg_one_of_isCW` |
+| The local picture: one value `L`, `0` or `1`, on the left of every edge and in the small sectors at the vertices, `L - 1` on the right, every point off the boundary seeing one of the two, and `WindsZeroOrOne` exactly when `L = 1` | simple | `IsSimple.exists_side_values` |
 
 This is the winding-number half of the Jordan curve theorem for polygons, and
 the proof is about segments only, not general curves. Beside every edge, on
@@ -222,7 +225,8 @@ nonstrict half of it.
 
 ### Ears
 
-An ear is given, not found: nothing here says that a polygon has one.
+The theorems of this section take an ear as given; that one exists is the Two
+Ears Theorem (next section).
 
 | Result | Assumptions | Theorem |
 | --- | --- | --- |
@@ -292,6 +296,84 @@ IsEar P i  (P simple, n ≥ 4, IsCCW P, or WindsZeroOrOne P)
 are all proved, the last because the smaller polygon winds `1 - 1 = 0` times
 there.
 
+### Diagonals and two ears
+
+| Result | Assumptions | Theorem |
+| --- | --- | --- |
+| The winding numbers of the two chains on either side of a closing segment add up to the ring's | `k ≤ n` | `windingNumber_chain_add` |
+| The chain cut off by a diagonal is simple | simple | `IsDiagonal.isSimple_chain` |
+| Both sides of a diagonal wind `0` or `1` times, their open regions lie in the polygon's, and are disjoint | simple, `WindsZeroOrOne` | `IsDiagonal.windsZeroOrOne_chain`, `IsDiagonal.openRegion_chain_subset`, `IsDiagonal.disjoint_openRegion_chain` |
+| Some vertex is convex: the one with the largest `x`, and among those the largest `y` | simple, `WindsZeroOrOne` | `IsSimple.exists_convexVertex` |
+| The diagonal of an ear is a diagonal | simple, `4 ≤ n`, `WindsZeroOrOne` | `IsEar.openSegment_subset_openRegion`, `IsEar.isDiagonal` |
+| A convex vertex that is not an ear starts a diagonal | simple, `4 ≤ n`, `WindsZeroOrOne` | `ConvexVertex.exists_isDiagonal` |
+| There is a diagonal | simple, `4 ≤ n`, `WindsZeroOrOne` | `IsSimple.exists_diagonal` |
+| Strictly inside the chain cut off by a diagonal there is an ear | simple, `WindsZeroOrOne` | `IsDiagonal.exists_ear` |
+| There is an ear | simple, `4 ≤ n`, `WindsZeroOrOne` or `IsCCW` | `IsSimple.exists_ear`, `IsSimple.exists_ear_of_isCCW`, `SimplePolygon.exists_ear`, `SimplePolygon.exists_ear_of_isCCW` |
+| Two Ears: two different ears whose open triangles are disjoint | simple, `4 ≤ n`, `WindsZeroOrOne` or `IsCCW` | `IsSimple.exists_two_nonoverlapping_ears`, `IsSimple.exists_two_nonoverlapping_ears_of_isCCW`, `IsSimple.exists_two_ears`, and the `SimplePolygon` versions |
+| An ear chosen without a policy, to cut | simple, `4 ≤ n`, `WindsZeroOrOne` | `SimplePolygon.someEar`, `SimplePolygon.isEar_someEar` |
+
+This is Meisters' Two Ears Theorem for the ear test of this library, which
+keeps other vertices out of the closed ear triangle. No general position is
+assumed: consecutive collinear vertices, vertices on a candidate diagonal and
+many vertices going straight on are all allowed, and the theorem needs no
+hypothesis beyond simplicity, at least four vertices, and `WindsZeroOrOne`
+(or `IsCCW`). Before the proof, a brute-force search over all simple
+counterclockwise polygons with vertices on small integer grids (up to nine
+vertices on the 3×3 grid, six on the 4×4 grid, collinear configurations
+included) found none without two ears with disjoint open triangles. Where
+collinearity matters in the proof:
+
+- a vertex that goes straight on is never an ear, and the extreme vertex used
+  as the first convex vertex cannot go straight on, because both its
+  neighbours lie on the same side of it;
+- the diagonal from a convex non-ear vertex goes to the vertex in its closed
+  ear triangle farthest from the line through its neighbours, which may lie
+  on that line, that is on the ear's diagonal; the argument below does not
+  care;
+- a chain of two steps cut off by a diagonal is a nondegenerate triangle
+  because it is simple, and nothing but its corners can be in it.
+
+The primary theorems assume `WindsZeroOrOne` rather than `IsCCW`, because
+that is what the recursion carries: cutting an ear keeps it
+(`IsEar.windsZeroOrOne_removeEar`), and so does cutting along a diagonal
+(`IsDiagonal.windsZeroOrOne_chain`).
+
+The proof:
+
+1. The vertex with the largest `x`, and among those the largest `y`, turns
+   left. Going straight on would put one neighbour beyond it; turning right
+   would make the sector on the left of the boundary there, where the
+   winding number is `1`, reach to the right of every vertex, where it is
+   `0`.
+2. At a convex vertex `v` with neighbours `u` and `w`: if `v` is an ear, the
+   segment `u w` is a diagonal, since it avoids the boundary and borders the
+   interior of the ear triangle, where the winding number is `1`. If not,
+   take the vertex `z` in the closed triangle `u v w`, other than these
+   three, farthest from the line `u w`. For a point `x` inside the segment
+   `v z`, the parallel to `u w` between `z` and `x` cuts off a small triangle
+   at `v` that holds no other vertex. An edge through `x` would have to enter
+   and leave it through its side on the parallel, the other two sides lying
+   on the edges at `v`, and a segment cannot do that
+   (`Triangle.disjoint_toSet_of_avoid`). Near `v` the segment is in the
+   sector on the left, so it runs where the winding number is `1`.
+3. A diagonal splits the polygon into two chains. Across the diagonal both
+   sides see the polygon's winding number `1`, and each chain's winding
+   number steps by one across its closing edge; since the two add up to the
+   polygon's, each chain has left value `1`, so winds `0` or `1` times. A
+   point in the open region of one side and on the boundary of the polygon
+   would lie on an edge of the other side, and just to the left of that edge
+   both sides would wind once, the polygon twice. Points in both open
+   regions would likewise wind twice.
+4. A diagonal of the chain cut off by a diagonal, taken on its side away
+   from the closing segment, is a diagonal of the polygon cutting off fewer
+   steps. By strong induction on the number of steps, a chain of two steps
+   is reached, and its middle vertex is an ear. A diagonal and its other
+   side give two ears, inside the two disjoint open regions.
+
+No polygon split into new `RawPolygon` index ranges is needed beyond
+`chain`, whose vertices are `vertex (next^[m] i)`; the base case `n = 4` is
+not special.
+
 ### Examples
 
 `LeanComputationalGeometry/Examples/Basic.lean` runs concrete coordinates
@@ -312,6 +394,13 @@ the L wind `0` or `1` times, both by direct computation and from their signed
 areas through the general theorem, applies the region theorems to their ears
 from simplicity and orientation alone, and gives the clockwise L as a simple
 polygon with an ear outside it, winding `0` or `-1` times.
+`LeanComputationalGeometry/Examples/TwoEars.lean` proves a convex pentagon, a
+square with extra vertices in the middle of two sides (two vertices going
+straight on), and a comb with three teeth and three reflex vertices simple
+and counterclockwise, and gets two ears with disjoint open triangles for
+them and for the square and the L from the general theorem; for the square
+(corners `0` and `2`) and the comb (two tooth tips) the two ears are also
+exhibited by hand.
 
 ### On LeanGeospatial's shoelace
 
@@ -350,9 +439,9 @@ Mathlib. It does not check:
 | winding topology | done: local constancy off the boundary, constancy on preconnected sets, open and closed regions, the step across an edge |
 | polygonal Jordan / winding orientation | done: `WindsZeroOrOne` proved for every simple counterclockwise polygon, `0` or `-1` for clockwise ones |
 | ear local correctness | complete for simple counterclockwise polygons: simplicity, signed area, winding number, region identity, disjoint interiors |
-| Two Ears Theorem | next |
-| ear existence | next |
-| well-founded ear clipping | later |
+| Two Ears Theorem | done: two ears with disjoint open triangles, collinear vertices allowed |
+| ear existence | done |
+| well-founded ear clipping | next |
 | `n - 2` triangles | later |
 | triangulation correctness | later |
 | a simple polygon has a nonzero shoelace sum, so is counterclockwise or clockwise | open |
@@ -374,10 +463,10 @@ triangle P.earTriangle i  +  smaller SimplePolygon P.removeEar i, n - 1 vertices
 
 with the signed area and the winding number of `P` the sums of the two
 parts', the region of `P` their union, and the interiors disjoint, for any
-simple counterclockwise `P`. Recursing needs an ear to exist
-(the Two Ears Theorem), which is the next step; the vertex count falling by
-one (`removeEar_n`) is what will make the recursion terminate with `n - 2`
-triangles. The smaller polygon again winds `0` or `1` times
+simple counterclockwise `P`. An ear exists (`SimplePolygon.exists_ear`, from
+`WindsZeroOrOne` and `4 ≤ n`), and `SimplePolygon.someEar` picks one; the
+vertex count falling by one (`removeEar_n`) is what will make the recursion
+terminate with `n - 2` triangles. The smaller polygon again winds `0` or `1` times
 (`IsEar.windsZeroOrOne_removeEar`): off the ear triangle its winding numbers
 are the polygon's, and on the ear triangle they are `0`. So the property
 carries through the recursion, and only the input polygon needs to be
@@ -466,9 +555,12 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Polygon/EarRegion.lean` | the ear triangle inside the polygon, the region split, disjoint interiors, given `WindsZeroOrOne` |
 | `LeanComputationalGeometry/Polygon/WindingArea.lean` | the winding number integrates to half the shoelace sum |
 | `LeanComputationalGeometry/Polygon/Jordan.lean` | simple polygons wind `0` or `±1` times; `WindsZeroOrOne` from `IsCCW`; the ear theorems for counterclockwise polygons |
+| `LeanComputationalGeometry/Polygon/Diagonal.lean` | chains, diagonals, the winding numbers, simplicity and open regions of the two sides of a diagonal |
+| `LeanComputationalGeometry/Polygon/TwoEars.lean` | a convex vertex, a diagonal, ear existence, the Two Ears Theorem |
 | `LeanComputationalGeometry/Examples/Basic.lean` | worked examples: segments, triangles, signed area |
 | `LeanComputationalGeometry/Examples/Polygons.lean` | worked examples: inside, outside and boundary points of three polygons |
 | `LeanComputationalGeometry/Examples/Ears.lean` | worked examples: ears of the square and the L, and cutting them off |
 | `LeanComputationalGeometry/Examples/EarRegion.lean` | worked examples: the region theorems for the square and the L, and the clockwise L |
+| `LeanComputationalGeometry/Examples/TwoEars.lean` | worked examples: two ears of a pentagon, a square with collinear vertices, a comb, the square and the L |
 | `LeanComputationalGeometry/Axioms.lean` | the axiom audit |
 | `scripts/joint_check.sh` | the joint check with the sibling libraries |
