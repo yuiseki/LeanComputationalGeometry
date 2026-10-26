@@ -541,6 +541,186 @@ theorem IsSimple.eventually_thinLeft_not_onBoundary (hP : P.IsSimple) (e : Fin P
   filter_upwards [eventually_all.mpr key] with h hh q hq ⟨j, hj⟩
   exact hh j q hq hj
 
+/-- Near a point inside an edge, the points on its left are in each thin
+triangle beside it. -/
+theorem eventually_mem_thinLeft (e : Fin P.n) {h : ℝ} (hh : 0 < h)
+    (hvv : P.vertex e ≠ P.vertex (P.next e)) {q₀ : Point2D}
+    (hq₀ : q₀ ∈ openSegment ℝ (P.vertex e) (P.vertex (P.next e))) :
+    ∀ᶠ q in 𝓝 q₀, 0 < orient (P.vertex e) (P.vertex (P.next e)) q → q ∈ P.thinLeft e h := by
+  set v := P.vertex e
+  set v' := P.vertex (P.next e)
+  set D := dot (v' - v) (v' - v)
+  have hD : 0 < D := by
+    have hd : v' - v ≠ 0 := sub_ne_zero.mpr hvv.symm
+    by_contra hle
+    apply hd
+    simp only [D, dot] at hle
+    apply Point2D.ext
+    · simp only [x_zero]; nlinarith [sq_nonneg (v' - v).x, sq_nonneg (v' - v).y]
+    · simp only [y_zero]; nlinarith [sq_nonneg (v' - v).x, sq_nonneg (v' - v).y]
+  obtain ⟨a, τ, ha, hτ, hsum, rfl⟩ := hq₀
+  obtain rfl : a = 1 - τ := by linarith
+  have e₁ : orient v v' ((1 - τ) • v + τ • v') = 0 := by
+    rw [orient_lineMap, orient_self₁₃, orient_self₂₃]; ring
+  have e₂ : dot ((1 - τ) • v + τ • v' - v) (v' - v) = τ * D := by
+    simp only [D, dot, x_sub, y_sub, x_add, y_add, x_smul, y_smul]; ring
+  have hc₂ : Continuous fun q => 2 * h * dot (q - v) (v' - v) - orient v v' q := by
+    unfold dot; fun_prop
+  have hc₃ : Continuous fun q => 2 * h * (D - dot (q - v) (v' - v)) - orient v v' q := by
+    unfold dot; fun_prop
+  have p₂ : 0 < 2 * h * dot ((1 - τ) • v + τ • v' - v) (v' - v) -
+      orient v v' ((1 - τ) • v + τ • v') := by
+    rw [e₁, e₂]; nlinarith [mul_pos (mul_pos hh hτ) hD]
+  have p₃ : 0 < 2 * h * (D - dot ((1 - τ) • v + τ • v' - v) (v' - v)) -
+      orient v v' ((1 - τ) • v + τ • v') := by
+    rw [e₁, e₂]; nlinarith [mul_pos (mul_pos hh ha) hD]
+  filter_upwards [hc₂.continuousAt.eventually (lt_mem_nhds p₂),
+    hc₃.continuousAt.eventually (lt_mem_nhds p₃)] with q h₂ h₃ h₁
+  exact ⟨h₁, by linarith, by linarith⟩
+
+theorem dot_self_pos {d : Point2D} (hd : d ≠ 0) : 0 < dot d d := by
+  by_contra hle
+  apply hd
+  simp only [dot] at hle
+  apply Point2D.ext
+  · simp only [x_zero]; nlinarith [sq_nonneg d.x, sq_nonneg d.y]
+  · simp only [y_zero]; nlinarith [sq_nonneg d.x, sq_nonneg d.y]
+
+/-- A thin triangle beside an edge reaches into every sector at the edge's
+start. -/
+theorem IsSimple.eventually_thinLeft_meets_leftSector (hP : P.IsSimple) (e : Fin P.n) :
+    ∀ᶠ h in 𝓝[>] (0 : ℝ), ∀ r, 0 < r → (P.thinLeft e h ∩ P.leftSector e r).Nonempty := by
+  classical
+  set u := P.prevVertex e
+  set v := P.vertex e
+  set v' := P.vertex (P.next e)
+  set d := v' - v
+  set D := dot d d
+  have hD : 0 < D := dot_self_pos (sub_ne_zero.mpr (hP.edge_nondegenerate e).symm)
+  set O := orient u v v'
+  set K := dot (v - u) d
+  have hE : ∀ᶠ h in 𝓝[>] (0 : ℝ), 0 ≤ O → 0 < O + h * K := by
+    rcases lt_trichotomy O 0 with hO | hO | hO
+    · exact Eventually.of_forall fun h h' => absurd h' (not_le.mpr hO)
+    · have hK : 0 < K := hP.dot_pos_of_locallyDegenerate hO
+      filter_upwards [self_mem_nhdsWithin] with h hh _
+      rw [hO, zero_add]; exact mul_pos hh hK
+    · have hc : Continuous fun h : ℝ => O + h * K := by fun_prop
+      exact ((hc.continuousAt.eventually (lt_mem_nhds (by simpa using hO))).filter_mono
+        nhdsWithin_le_nhds).mono fun h hh _ => hh
+  filter_upwards [hE, self_mem_nhdsWithin] with h hE (hpos : 0 < h) r hr
+  set w : Point2D := d + h • Point2D.mk (-d.y) d.x
+  set C := |w.x| + |w.y|
+  set s := (1 / 4 : ℝ) * min 1 (r / (C + 1))
+  have hC : 0 ≤ C := by positivity
+  have hm : 0 < min 1 (r / (C + 1)) := lt_min one_pos (div_pos hr (by linarith))
+  have hs : 0 < s := by simp only [s]; positivity
+  have hs4 : s ≤ 1 / 4 := by simp only [s]; linarith [min_le_left 1 (r / (C + 1))]
+  have hsC : s * C < r := by
+    have h1 : min 1 (r / (C + 1)) * (C + 1) ≤ r := by
+      calc min 1 (r / (C + 1)) * (C + 1) ≤ r / (C + 1) * (C + 1) :=
+            mul_le_mul_of_nonneg_right (min_le_right _ _) (by linarith)
+        _ = r := by field_simp
+    simp only [s]; nlinarith
+  set q := v + s • w
+  have o₁ : orient v v' q = s * h * D := by
+    simp only [q, w, d, D, dot, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub,
+      Point2D.x_mk, Point2D.y_mk]; ring
+  have o₂ : dot (q - v) d = s * D := by
+    simp only [q, w, d, D, dot, x_add, y_add, x_smul, y_smul, x_sub, y_sub,
+      Point2D.x_mk, Point2D.y_mk]; ring
+  have o₃ : orient u v q = s * (O + h * K) := by
+    simp only [q, w, d, O, K, dot, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub,
+      Point2D.x_mk, Point2D.y_mk]; ring
+  have hqd : dist q v < r := by
+    calc dist q v ≤ |q.x - v.x| + |q.y - v.y| := dist_le_abs_add_abs _ _
+      _ = s * C := by
+          simp only [q, x_add, y_add, x_smul, y_smul, add_sub_cancel_left, abs_mul, abs_of_pos hs, C]
+          ring
+      _ < r := hsC
+  have hshD : 0 < s * h * D := by positivity
+  refine ⟨q, ⟨?_, ?_, ?_⟩, hqd, ?_⟩
+  · show 0 < orient v v' q; rw [o₁]; exact hshD
+  · show orient v v' q < 2 * h * dot (q - v) d; rw [o₁, o₂]; nlinarith
+  · show orient v v' q < 2 * h * (D - dot (q - v) d); rw [o₁, o₂]; nlinarith
+  · show if 0 ≤ O then 0 < orient u v q ∧ 0 < orient v v' q else 0 < orient u v q ∨ 0 < orient v v' q
+    split_ifs with hc
+    · exact ⟨by rw [o₃]; exact mul_pos hs (hE hc), by rw [o₁]; exact hshD⟩
+    · exact Or.inr (by rw [o₁]; exact hshD)
+
+/-- A thin triangle beside an edge reaches into every sector at the edge's
+end. -/
+theorem IsSimple.eventually_thinLeft_meets_leftSector_next (hP : P.IsSimple) (e : Fin P.n) :
+    ∀ᶠ h in 𝓝[>] (0 : ℝ), ∀ r, 0 < r →
+      (P.thinLeft e h ∩ P.leftSector (P.next e) r).Nonempty := by
+  classical
+  set v := P.vertex e
+  set v' := P.vertex (P.next e)
+  set w₀ := P.nextVertex (P.next e)
+  have hpv : P.prevVertex (P.next e) = v := by simp [prevVertex, v]
+  set d := v' - v
+  set D := dot d d
+  have hD : 0 < D := dot_self_pos (sub_ne_zero.mpr (hP.edge_nondegenerate e).symm)
+  set O := orient v v' w₀
+  set K := dot d (w₀ - v')
+  have hE : ∀ᶠ h in 𝓝[>] (0 : ℝ), 0 ≤ O → 0 < O + h * K := by
+    rcases lt_trichotomy O 0 with hO | hO | hO
+    · exact Eventually.of_forall fun h h' => absurd h' (not_le.mpr hO)
+    · have hdeg : P.LocallyDegenerate (P.next e) := by
+        show orient (P.prevVertex (P.next e)) _ _ = 0
+        rw [hpv]; exact hO
+      have hK : 0 < K := by
+        have := hP.dot_pos_of_locallyDegenerate hdeg
+        rw [hpv] at this
+        exact this
+      filter_upwards [self_mem_nhdsWithin] with h hh _
+      rw [hO, zero_add]; exact mul_pos hh hK
+    · have hc : Continuous fun h : ℝ => O + h * K := by fun_prop
+      exact ((hc.continuousAt.eventually (lt_mem_nhds (by simpa using hO))).filter_mono
+        nhdsWithin_le_nhds).mono fun h hh _ => hh
+  filter_upwards [hE, self_mem_nhdsWithin] with h hE (hpos : 0 < h) r hr
+  set w : Point2D := -d + h • Point2D.mk (-d.y) d.x
+  set C := |w.x| + |w.y|
+  set s := (1 / 4 : ℝ) * min 1 (r / (C + 1))
+  have hC : 0 ≤ C := by positivity
+  have hm : 0 < min 1 (r / (C + 1)) := lt_min one_pos (div_pos hr (by linarith))
+  have hs : 0 < s := by simp only [s]; positivity
+  have hs4 : s ≤ 1 / 4 := by simp only [s]; linarith [min_le_left 1 (r / (C + 1))]
+  have hsC : s * C < r := by
+    have h1 : min 1 (r / (C + 1)) * (C + 1) ≤ r := by
+      calc min 1 (r / (C + 1)) * (C + 1) ≤ r / (C + 1) * (C + 1) :=
+            mul_le_mul_of_nonneg_right (min_le_right _ _) (by linarith)
+        _ = r := by field_simp
+    simp only [s]; nlinarith
+  set q := v' + s • w
+  have o₁ : orient v v' q = s * h * D := by
+    simp only [q, w, d, D, dot, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub, x_neg,
+      y_neg, Point2D.x_mk, Point2D.y_mk]; ring
+  have o₂ : dot (q - v) d = D - s * D := by
+    simp only [q, w, d, D, dot, x_add, y_add, x_smul, y_smul, x_sub, y_sub, x_neg, y_neg,
+      Point2D.x_mk, Point2D.y_mk]; ring
+  have o₃ : orient v' w₀ q = s * (O + h * K) := by
+    simp only [q, w, d, O, K, dot, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub, x_neg,
+      y_neg, Point2D.x_mk, Point2D.y_mk]; ring
+  have hqd : dist q v' < r := by
+    calc dist q v' ≤ |q.x - v'.x| + |q.y - v'.y| := dist_le_abs_add_abs _ _
+      _ = s * C := by
+          simp only [q, x_add, y_add, x_smul, y_smul, add_sub_cancel_left, abs_mul, abs_of_pos hs, C]
+          ring
+      _ < r := hsC
+  have hshD : 0 < s * h * D := by positivity
+  refine ⟨q, ⟨?_, ?_, ?_⟩, hqd, ?_⟩
+  · show 0 < orient v v' q; rw [o₁]; exact hshD
+  · show orient v v' q < 2 * h * dot (q - v) d; rw [o₁, o₂]; nlinarith
+  · show orient v v' q < 2 * h * (D - dot (q - v) d); rw [o₁, o₂]; nlinarith
+  · show if 0 ≤ orient (P.prevVertex (P.next e)) v' w₀ then
+        0 < orient (P.prevVertex (P.next e)) v' q ∧ 0 < orient v' w₀ q
+      else 0 < orient (P.prevVertex (P.next e)) v' q ∨ 0 < orient v' w₀ q
+    rw [hpv]
+    split_ifs with hc
+    · exact ⟨by rw [o₁]; exact hshD, by rw [o₃]; exact mul_pos hs (hE hc)⟩
+    · exact Or.inl (by rw [o₁]; exact hshD)
+
 end RawPolygon
 
 end ComputationalGeometry
