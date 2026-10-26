@@ -52,12 +52,20 @@ theorem iterate_next_inj (i : Fin P.n) {a b : ℕ} (ha : a < P.n) (hb : b < P.n)
   · apply P.iterate_next_ne (P.next^[b] i) (k := a - b) (by omega) (by omega)
     rw [← iterate_next_add, Nat.sub_add_cancel hlt.le, h]
 
+theorem iterate_next_injective (i : Fin P.n) :
+    Function.Injective fun m : Fin P.n => P.next^[m.val] i :=
+  fun a b h => Fin.ext (iterate_next_inj i a.isLt b.isLt h)
+
+/-- Every vertex is fewer than `n` steps on from any other. -/
+theorem exists_iterate_next_eq (i j : Fin P.n) : ∃ m < P.n, P.next^[m] i = j := by
+  obtain ⟨m, hm⟩ := (Finite.injective_iff_surjective.mp (iterate_next_injective i)) j
+  exact ⟨m.val, m.isLt, hm⟩
+
 /-- Summing over the vertices in ring order from any vertex is summing over
 all vertices. -/
 theorem sum_range_iterate_next {M : Type*} [AddCommMonoid M] (i : Fin P.n) (f : Fin P.n → M) :
     ∑ m ∈ Finset.range P.n, f (P.next^[m] i) = ∑ j, f j := by
-  have hinj : Function.Injective fun m : Fin P.n => P.next^[m.val] i :=
-    fun a b h => Fin.ext (iterate_next_inj i a.isLt b.isLt h)
+  have hinj := iterate_next_injective i
   rw [← Fin.sum_univ_eq_sum_range (fun m => f (P.next^[m] i))]
   exact Equiv.sum_comp (Equiv.ofBijective _ (Finite.injective_iff_bijective.mp hinj)) f
 
@@ -306,6 +314,189 @@ theorem isSimple_chain (hP : P.IsSimple) (hD : P.IsDiagonal i k) : (P.chain i k)
       · apply h₁'; rw [hva, show a.val = k by omega, Nat.mod_self, h0]
       · apply h₂'; rw [hvb, Nat.mod_eq_of_lt (by omega)]; omega
     · exact hab' (by omega)
+
+end IsDiagonal
+
+/-! ## The two sides of a diagonal -/
+
+/-- Near a point on the line through `a` and `b`, any property holding near it
+on the left holds somewhere on the left. -/
+theorem exists_left_near {a b d : Point2D} (hab : a ≠ b) (hd : orient a b d = 0)
+    {S : Set Point2D} (hS : ∀ᶠ q in 𝓝 d, 0 < orient a b q → q ∈ S) :
+    ∃ q ∈ S, 0 < orient a b q := by
+  set u := b - a
+  set nrm := Point2D.mk (-u.y) u.x
+  have hu : 0 < cross u nrm := by
+    have := dot_self_pos (sub_ne_zero.mpr hab.symm)
+    simp only [dot, cross, nrm, Point2D.x_mk, Point2D.y_mk] at this ⊢
+    linarith
+  have hγ : Tendsto (fun ε : ℝ => d + ε • nrm) (𝓝[>] 0) (𝓝 d) := by
+    have : Continuous fun ε : ℝ => d + ε • nrm := by fun_prop
+    simpa using (this.tendsto 0).mono_left nhdsWithin_le_nhds
+  obtain ⟨ε, h₁, h₂⟩ := ((hγ.eventually hS).and self_mem_nhdsWithin).exists
+  have ho : 0 < orient a b (d + ε • nrm) := by
+    rw [orient_add, hd, cross_smul_right, zero_add]
+    exact mul_pos h₂ hu
+  exact ⟨_, h₁ ho, ho⟩
+
+/-- Every edge of `P` is an edge of one of the two chains. -/
+theorem onBoundary_chain_or (i : Fin P.n) (k : ℕ) {p : Point2D} (hp : P.OnBoundary p) :
+    (P.chain i k).OnBoundary p ∨ (P.chain (P.next^[k] i) (P.n - k)).OnBoundary p := by
+  obtain ⟨j, hj⟩ := hp
+  obtain ⟨m, hm, rfl⟩ := exists_iterate_next_eq i j
+  rcases Nat.lt_or_ge m k with h | h
+  · exact Or.inl ((onBoundary_chain_iff i k p).mpr (Or.inl ⟨m, h, hj⟩))
+  · refine Or.inr ((onBoundary_chain_iff _ _ p).mpr (Or.inl ⟨m - k, by omega, ?_⟩))
+    rwa [← iterate_next_add, Nat.sub_add_cancel h]
+
+namespace IsDiagonal
+
+variable {i : Fin P.n} {k : ℕ}
+
+theorem iterate_next_sub (hD : P.IsDiagonal i k) : P.next^[P.n - k] (P.next^[k] i) = i := by
+  rw [← iterate_next_add, Nat.sub_add_cancel (by have := hD.add_two_le; omega), iterate_next_n]
+
+/-- Both sides of a diagonal of a simple polygon that winds `0` or `1` times
+wind `0` or `1` times. -/
+theorem windsZeroOrOne_chain (hP : P.IsSimple) (hJ : P.WindsZeroOrOne)
+    (hD : P.IsDiagonal i k) : (P.chain i k).WindsZeroOrOne := by
+  have hn := hD.add_two_le
+  set z := P.next^[k] i with hz
+  obtain ⟨L₁, h₁, hiff₁, -, -, hside₁⟩ := (hD.isSimple_chain hP).exists_side_values
+  obtain ⟨L₂, h₂, -, -, -, hside₂⟩ := (hD.symm.isSimple_chain hP).exists_side_values
+  rw [hiff₁]
+  -- The closing edges of the two chains are the diagonal, both ways.
+  set f₁ : Fin (P.chain i k).n := ⟨k, by simp only [chain_n]; omega⟩
+  set f₂ : Fin (P.chain z (P.n - k)).n := ⟨P.n - k, by simp only [chain_n]; omega⟩
+  have hv₁ : (P.chain i k).vertex f₁ = P.vertex z := rfl
+  have hv₁' : (P.chain i k).vertex ((P.chain i k).next f₁) = P.vertex i :=
+    chain_vertex_next_last f₁ rfl
+  have hv₂ : (P.chain z (P.n - k)).vertex f₂ = P.vertex i := by
+    rw [chain_vertex]; exact congrArg P.vertex hD.iterate_next_sub
+  have hv₂' : (P.chain z (P.n - k)).vertex ((P.chain z (P.n - k)).next f₂) = P.vertex z :=
+    chain_vertex_next_last f₂ rfl
+  set d : Point2D := (1 / 2 : ℝ) • P.vertex z + (1 / 2 : ℝ) • P.vertex i
+  have hd₁ : d ∈ openSegment ℝ (P.vertex z) (P.vertex i) :=
+    ⟨1 / 2, 1 / 2, by norm_num, by norm_num, by norm_num, rfl⟩
+  have hd : d ∈ P.openRegion := hD.openSegment_subset (by rw [openSegment_symm]; exact hd₁)
+  have hwd : P.windingNumber d = 1 := by
+    rcases hJ d hd.1 with e | e
+    · exact absurd e hd.2
+    · exact e
+  have e₁ := hside₁ f₁ d (by rw [hv₁, hv₁']; exact hd₁)
+  rw [hv₁, hv₁'] at e₁
+  have e₂ := hside₂ f₂ d (by rw [hv₂, hv₂', openSegment_symm]; exact hd₁)
+  rw [hv₂, hv₂'] at e₂
+  have hod : orient (P.vertex z) (P.vertex i) d = 0 :=
+    Segment.orient_eq_zero_of_mem (s := ⟨P.vertex z, P.vertex i⟩)
+      (openSegment_subset_segment ℝ _ _ hd₁)
+  obtain ⟨q, ⟨hq₁, hq₂, hq₃⟩, -⟩ := exists_left_near hD.vertex_ne.symm hod
+    (S := {q | (P.chain i k).windingNumber q = L₁ ∧
+      (P.chain z (P.n - k)).windingNumber q = L₂ - 1 ∧ P.windingNumber q = 1})
+    (by
+      filter_upwards [e₁, e₂, P.windingNumber_eventually_eq hd.1] with q a b c hpos
+      exact ⟨a.1 hpos, b.2 (by rw [orient_swap₁₂]; linarith), c.trans hwd⟩)
+  have := windingNumber_chain_add i (k := k) (by omega) q
+  rw [← hz] at this
+  omega
+
+/-- The open region of a side of a diagonal lies in the open region of a
+simple polygon that winds `0` or `1` times. -/
+theorem openRegion_chain_subset (hP : P.IsSimple) (hJ : P.WindsZeroOrOne)
+    (hD : P.IsDiagonal i k) : (P.chain i k).openRegion ⊆ P.openRegion := by
+  have hn := hD.add_two_le
+  set z := P.next^[k] i with hz
+  have hJ₁ := hD.windsZeroOrOne_chain hP hJ
+  have hJ₂ := hD.symm.windsZeroOrOne_chain hP hJ
+  have hw : ∀ q ∈ (P.chain i k).openRegion, (P.chain i k).windingNumber q = 1 := by
+    rintro q ⟨h₁, h₂⟩
+    rcases hJ₁ q h₁ with e | e
+    · exact absurd e h₂
+    · exact e
+  intro p hp
+  by_cases hb : P.OnBoundary p
+  · exfalso
+    obtain ⟨j, hj⟩ := hb
+    obtain ⟨m, hm, rfl⟩ := exists_iterate_next_eq i j
+    have hmk : k ≤ m := by
+      by_contra h
+      exact hp.1 ((onBoundary_chain_iff i k p).mpr (Or.inl ⟨m, by omega, hj⟩))
+    set j := P.next^[m] i with hj'
+    -- A point inside edge `j`, in the open region of the chain.
+    obtain ⟨p', hp'U, hp'⟩ : ∃ p' ∈ (P.chain i k).openRegion,
+        p' ∈ openSegment ℝ (P.vertex j) (P.vertex (P.next j)) := by
+      have hcl : p ∈ closure (openSegment ℝ (P.vertex j) (P.vertex (P.next j))) := by
+        rw [closure_openSegment]; exact hj
+      obtain ⟨p', h₁, h₂⟩ := mem_closure_iff.mp hcl _ (P.chain i k).isOpen_openRegion hp
+      exact ⟨p', h₁, h₂⟩
+    -- Edge `j` is an edge of the other side.
+    set m₂ : Fin (P.chain z (P.n - k)).n := ⟨m - k, by simp only [chain_n]; omega⟩
+    have hj₂ : P.next^[m - k] z = j := by rw [hz, ← iterate_next_add, Nat.sub_add_cancel hmk]
+    have hv : (P.chain z (P.n - k)).vertex m₂ = P.vertex j := by
+      rw [chain_vertex]; exact congrArg P.vertex hj₂
+    have hv' : (P.chain z (P.n - k)).vertex ((P.chain z (P.n - k)).next m₂) =
+        P.vertex (P.next j) := by
+      rw [chain_vertex_next_of_lt m₂ (show m - k < P.n - k by omega)]
+      exact congrArg (fun x => P.vertex (P.next x)) hj₂
+    obtain ⟨L₂, -, hiff₂, -, -, hside₂⟩ := (hD.symm.isSimple_chain hP).exists_side_values
+    have hL₂ := hiff₂.mp hJ₂
+    have e₂ := hside₂ m₂ p' (by rw [hv, hv']; exact hp')
+    rw [hv, hv'] at e₂
+    -- Near `p'` on the left of edge `j` there are points off the boundary.
+    have hoff : ∀ᶠ q in 𝓝 p', 0 < orient (P.vertex j) (P.vertex (P.next j)) q →
+        ¬ P.OnBoundary q := by
+      have hfar : ∀ᶠ q in 𝓝 p', ∀ l, l ≠ j → q ∉ segment ℝ (P.vertex l) (P.vertex (P.next l)) := by
+        rw [eventually_all]
+        intro l
+        by_cases hl : l = j
+        · exact Eventually.of_forall fun _ h => absurd hl h
+        · exact Filter.eventually_of_mem ((isClosed_segment _ _).isOpen_compl.mem_nhds
+            (hP.not_mem_edge_of_mem_openSegment hl hp')) fun _ hq _ => hq
+      filter_upwards [hfar] with q hq hpos ⟨l, hl⟩
+      by_cases hlj : l = j
+      · subst hlj
+        exact hpos.ne' (Segment.orient_eq_zero_of_mem (P.edge _) hl)
+      · exact hq l hlj hl
+    have hod : orient (P.vertex j) (P.vertex (P.next j)) p' = 0 :=
+      Segment.orient_eq_zero_of_mem (s := P.edge j) (openSegment_subset_segment ℝ _ _ hp')
+    obtain ⟨q, ⟨hq₁, hq₂, hq₃⟩, -⟩ := exists_left_near (hP.edge_nondegenerate j) hod
+      (S := {q | ¬ P.OnBoundary q ∧ (P.chain z (P.n - k)).windingNumber q = L₂ ∧
+        (P.chain i k).windingNumber q = 1})
+      (by
+        filter_upwards [hoff, e₂, (P.chain i k).windingNumber_eventually_eq hp'U.1] with q a b c hpos
+        exact ⟨a hpos, b.1 hpos, c.trans (hw p' hp'U)⟩)
+    have := windingNumber_chain_add i (k := k) (by omega) q
+    rw [← hz] at this
+    rcases hJ q hq₁ with e | e <;> omega
+  · refine ⟨hb, ?_⟩
+    have hb₂ : ¬ (P.chain z (P.n - k)).OnBoundary p := by
+      rw [onBoundary_chain_iff]
+      rintro (⟨m, -, hpm⟩ | hpm)
+      · exact hb ⟨_, hpm⟩
+      · apply hp.1
+        rw [onBoundary_chain_iff]
+        right
+        rw [hD.iterate_next_sub] at hpm
+        rwa [segment_symm]
+    have := windingNumber_chain_add i (k := k) (by omega) p
+    rw [← hz] at this
+    show P.windingNumber p ≠ 0
+    rw [hw p hp] at this
+    rcases hJ₂ p hb₂ with e | e <;> rw [e] at this <;> rw [← this] <;> norm_num
+
+/-- The open regions of the two sides of a diagonal are disjoint. -/
+theorem disjoint_openRegion_chain (hP : P.IsSimple) (hJ : P.WindsZeroOrOne)
+    (hD : P.IsDiagonal i k) :
+    Disjoint (P.chain i k).openRegion (P.chain (P.next^[k] i) (P.n - k)).openRegion := by
+  rw [Set.disjoint_left]
+  rintro p ⟨h₁, w₁⟩ ⟨h₂, w₂⟩
+  have hb : ¬ P.OnBoundary p := fun hb => (onBoundary_chain_or i k hb).elim h₁ h₂
+  have := windingNumber_chain_add i (k := k) (by have := hD.add_two_le; omega) p
+  rcases hD.windsZeroOrOne_chain hP hJ p h₁ with e₁ | e₁
+  · exact w₁ e₁
+  rcases hD.symm.windsZeroOrOne_chain hP hJ p h₂ with e₂ | e₂
+  · exact w₂ e₂
+  rcases hJ p hb with e | e <;> omega
 
 end IsDiagonal
 
