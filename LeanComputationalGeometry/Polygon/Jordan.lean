@@ -1,4 +1,5 @@
 import LeanComputationalGeometry.Polygon.EarRegion
+import LeanComputationalGeometry.Polygon.WindingArea
 
 /-!
 # Winding numbers of simple polygons
@@ -1051,6 +1052,81 @@ theorem IsSimple.windingNumber_cases (hP : P.IsSimple) :
 theorem IsSimple.abs_windingNumber_le_one (hP : P.IsSimple) {p : Point2D} (hp : ¬ P.OnBoundary p) :
     |P.windingNumber p| ≤ 1 := by
   rcases hP.windingNumber_cases with h | h <;> rcases h p hp with e | e <;> rw [e] <;> norm_num
+
+/-! ## Orientation -/
+
+/-- A counterclockwise simple polygon winds `0` or `1` times around every point
+off its boundary. -/
+theorem IsSimple.windsZeroOrOne_of_isCCW (hP : P.IsSimple) (hccw : P.IsCCW) : P.WindsZeroOrOne := by
+  rcases hP.windingNumber_cases with h | h
+  · exact h
+  · exfalso
+    have := P.reverse.signedArea2_nonneg_of_windingNumber_nonneg fun p hp => by
+      rw [windingNumber_reverse]
+      rcases h p ((onBoundary_reverse P p).not.mp hp) with e | e <;> rw [e] <;> norm_num
+    rw [signedArea2_reverse] at this
+    exact absurd hccw (not_lt.mpr (by linarith))
+
+/-- A clockwise simple polygon winds `0` or `-1` times around every point off
+its boundary. -/
+theorem IsSimple.windingNumber_eq_zero_or_neg_one_of_isCW (hP : P.IsSimple) (hcw : P.IsCW)
+    {p : Point2D} (hp : ¬ P.OnBoundary p) : P.windingNumber p = 0 ∨ P.windingNumber p = -1 := by
+  have := hP.reverse.windsZeroOrOne_of_isCCW ((isCCW_reverse_iff P).mpr hcw) p
+    ((onBoundary_reverse P p).not.mpr hp)
+  rw [windingNumber_reverse] at this
+  omega
+
+/-- A simple polygon whose winding numbers off the boundary are `0` or `1` has a
+nonnegative shoelace sum. -/
+theorem WindsZeroOrOne.signedArea2_nonneg (hJ : P.WindsZeroOrOne) : 0 ≤ P.signedArea2 :=
+  P.signedArea2_nonneg_of_windingNumber_nonneg fun p hp => by
+    rcases hJ p hp with e | e <;> simp [e]
+
+/-! ## Ears of counterclockwise simple polygons -/
+
+theorem IsEar.earTriangle_subset_region_of_isCCW (hP : P.IsSimple) (hccw : P.IsCCW)
+    (h4 : 4 ≤ P.n) {i : Fin P.n} (h : P.IsEar i) : (P.earTriangle i).toSet ⊆ P.region :=
+  h.earTriangle_subset_region hP h4 (hP.windsZeroOrOne_of_isCCW hccw)
+
+theorem IsEar.interior_earTriangle_subset_openRegion_of_isCCW (hP : P.IsSimple)
+    (hccw : P.IsCCW) (h4 : 4 ≤ P.n) {i : Fin P.n} (h : P.IsEar i) :
+    interior (P.earTriangle i).toSet ⊆ P.openRegion :=
+  h.interior_earTriangle_subset_openRegion hP h4 (hP.windsZeroOrOne_of_isCCW hccw)
+
+theorem IsEar.region_removeEar_of_isCCW (hP : P.IsSimple) (hccw : P.IsCCW) (h4 : 4 ≤ P.n)
+    {i : Fin P.n} (h : P.IsEar i) :
+    P.region = (P.removeEar i).region ∪ (P.earTriangle i).toSet :=
+  h.region_removeEar hP h4 (hP.windsZeroOrOne_of_isCCW hccw)
+
+theorem IsEar.disjoint_openRegion_removeEar_of_isCCW (hP : P.IsSimple) (hccw : P.IsCCW)
+    (h4 : 4 ≤ P.n) {i : Fin P.n} (h : P.IsEar i) :
+    Disjoint (P.removeEar i).openRegion (interior (P.earTriangle i).toSet) :=
+  h.disjoint_openRegion_removeEar hP h4 (hP.windsZeroOrOne_of_isCCW hccw)
+
+theorem IsEar.windsZeroOrOne_removeEar_of_isCCW (hP : P.IsSimple) (hccw : P.IsCCW) (h4 : 4 ≤ P.n)
+    {i : Fin P.n} (h : P.IsEar i) : (P.removeEar i).WindsZeroOrOne :=
+  h.windsZeroOrOne_removeEar hP h4 (hP.windsZeroOrOne_of_isCCW hccw)
+
+end RawPolygon
+
+namespace SimplePolygon
+
+theorem windsZeroOrOne_of_isCCW (P : SimplePolygon) (hccw : P.1.IsCCW) : P.1.WindsZeroOrOne :=
+  P.2.windsZeroOrOne_of_isCCW hccw
+
+theorem toRegion_eq_removeEar_union_of_isCCW (P : SimplePolygon) (hccw : P.1.IsCCW)
+    (h4 : 4 ≤ P.1.n) (i : Fin P.1.n) (h : P.1.IsEar i) :
+    P.toRegion = (P.removeEar h4 i h).toRegion ∪ (P.1.earTriangle i).toSet :=
+  P.toRegion_eq_removeEar_union h4 i h (P.windsZeroOrOne_of_isCCW hccw)
+
+theorem disjoint_toOpenRegion_removeEar_of_isCCW (P : SimplePolygon) (hccw : P.1.IsCCW)
+    (h4 : 4 ≤ P.1.n) (i : Fin P.1.n) (h : P.1.IsEar i) :
+    Disjoint (P.removeEar h4 i h).toOpenRegion (interior (P.1.earTriangle i).toSet) :=
+  P.disjoint_toOpenRegion_removeEar h4 i h (P.windsZeroOrOne_of_isCCW hccw)
+
+end SimplePolygon
+
+namespace RawPolygon
 
 end RawPolygon
 
