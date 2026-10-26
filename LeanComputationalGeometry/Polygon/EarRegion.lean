@@ -149,6 +149,227 @@ theorem IsEar.not_onBoundary_of_mem_interior (hP : P.IsSimple) (h4 : 4 ≤ P.n) 
   exact Set.disjoint_left.mp (h.disjoint_edge_earTriangle hP e₁ e₂ e₃ e₄)
     (by rw [edge_toSet]; exact hj) hxT
 
+/-! ## Across an edge of a simple polygon -/
+
+/-- A point inside an edge of a simple polygon is on no other edge. -/
+theorem IsSimple.not_mem_edge_of_mem_openSegment (hP : P.IsSimple) {e k : Fin P.n} (hk : k ≠ e)
+    {p : Point2D} (hp : p ∈ openSegment ℝ (P.vertex e) (P.vertex (P.next e))) :
+    p ∉ segment ℝ (P.vertex k) (P.vertex (P.next k)) := by
+  intro hpk
+  have hpe : p ∈ segment ℝ (P.vertex e) (P.vertex (P.next e)) := openSegment_subset_segment _ _ _ hp
+  have hne : P.vertex e ≠ P.vertex (P.next e) := hP.edge_nondegenerate e
+  by_cases h₁ : k = P.next e
+  · subst h₁
+    have := (hP.adjacent_inter e).subset ⟨hpe, hpk⟩
+    rw [mem_singleton_iff] at this
+    rw [this] at hp
+    exact hne (right_mem_openSegment_iff.mp hp)
+  by_cases h₂ : P.next k = e
+  · have hk' : k = P.prev e := by rw [← h₂, prev_next]
+    subst hk'
+    have := (hP.adjacent_inter (P.prev e)).subset ⟨hpk, by rw [next_prev]; exact hpe⟩
+    rw [mem_singleton_iff, next_prev] at this
+    rw [this] at hp
+    exact hne (left_mem_openSegment_iff.mp hp)
+  exact Set.disjoint_left.mp (hP.nonadjacent_disjoint k e hk h₂ (Ne.symm h₁)) hpk hpe
+
+/-- Next to the middle of a non-horizontal edge of a simple polygon there are
+points off the boundary on both sides, and the winding number on the left is
+one more than on the right. The left-hand points can be taken in any set `S`
+containing all left-hand points near the middle. -/
+theorem IsSimple.exists_sides (hP : P.IsSimple) (e : Fin P.n) {u w : Point2D}
+    (hu : P.vertex e = u) (hw : P.vertex (P.next e) = w) (hy : u.y ≠ w.y) {S : Set Point2D}
+    (hS : ∀ᶠ q in 𝓝 ((1 / 2 : ℝ) • u + (1 / 2 : ℝ) • w), 0 < orient u w q → q ∈ S) :
+    ∃ q q', q ∈ S ∧ ¬ P.OnBoundary q ∧ ¬ P.OnBoundary q' ∧
+      P.windingNumber q = P.windingNumber q' + 1 := by
+  subst hu hw
+  set m : Point2D := (1 / 2 : ℝ) • P.vertex e + (1 / 2 : ℝ) • P.vertex (P.next e) with hmdef
+  have hm : m ∈ openSegment ℝ (P.vertex e) (P.vertex (P.next e)) :=
+    ⟨1 / 2, 1 / 2, by norm_num, by norm_num, by norm_num, rfl⟩
+  have hoff : ∀ k, k ≠ e → m ∉ segment ℝ (P.vertex k) (P.vertex (P.next k)) :=
+    fun k hk => hP.not_mem_edge_of_mem_openSegment hk hm
+  have hmy : m.y = ((P.vertex e).y + (P.vertex (P.next e)).y) / 2 := by
+    simp only [hmdef, y_add, y_smul]; ring
+  have hum : (P.vertex e).y ≠ m.y := by rw [hmy]; intro h; apply hy; linarith
+  have hwm : (P.vertex (P.next e)).y ≠ m.y := by rw [hmy]; intro h; apply hy; linarith
+  obtain ⟨K, hK⟩ := P.windingNumber_eventually_eq_add_edge e hoff hum hwm
+  -- Off the edge's line, its contribution is `1` on the left and `0` on the right, up to a
+  -- constant.
+  obtain ⟨d, hd⟩ : ∃ d : ℤ, ∀ᶠ q in 𝓝 m, orient (P.vertex e) (P.vertex (P.next e)) q ≠ 0 →
+      edgeContribution q (P.vertex e) (P.vertex (P.next e)) =
+        (if 0 < orient (P.vertex e) (P.vertex (P.next e)) q then 1 else 0) + d := by
+    rcases lt_or_gt_of_ne hy with hlt | hgt
+    · refine ⟨0, ?_⟩
+      filter_upwards [eventually_y_gt (show (P.vertex e).y < m.y by rw [hmy]; linarith),
+        eventually_y_lt (show m.y < (P.vertex (P.next e)).y by rw [hmy]; linarith)] with q h₁ h₂ _
+      rw [edgeContribution_of_up h₁.le h₂, add_zero]
+    · refine ⟨-1, ?_⟩
+      filter_upwards [eventually_y_lt (show m.y < (P.vertex e).y by rw [hmy]; linarith),
+        eventually_y_gt (show (P.vertex (P.next e)).y < m.y by rw [hmy]; linarith)]
+        with q h₁ h₂ h₀
+      rw [edgeContribution_of_down h₁ h₂.le]
+      rcases lt_or_gt_of_ne h₀ with hn | hn
+      · simp [hn, not_lt.mpr hn.le]
+      · simp [hn, not_lt.mpr hn.le]
+  have hedges : ∀ᶠ q in 𝓝 m, ∀ k, k ≠ e → q ∉ segment ℝ (P.vertex k) (P.vertex (P.next k)) := by
+    refine eventually_all.mpr fun k => ?_
+    by_cases hk : k = e
+    · exact Eventually.of_forall fun q h => absurd hk h
+    · exact Filter.mem_of_superset ((isClosed_segment _ _).isOpen_compl.mem_nhds (hoff k hk))
+        fun q hq _ => hq
+  have hE := hK.and (hd.and (hedges.and hS))
+  -- Walk away from the middle along the normal.
+  set nrm : Point2D := Point2D.mk (-((P.vertex (P.next e)).y - (P.vertex e).y))
+    ((P.vertex (P.next e)).x - (P.vertex e).x) with hnrm
+  set L := ((P.vertex (P.next e)).x - (P.vertex e).x) ^ 2 +
+    ((P.vertex (P.next e)).y - (P.vertex e).y) ^ 2 with hL
+  have horient : ∀ t : ℝ, orient (P.vertex e) (P.vertex (P.next e)) (m + t • nrm) = t * L := by
+    intro t
+    simp only [hmdef, hnrm, hL, orient_def, x_add, y_add, x_smul, y_smul, Point2D.x_mk, Point2D.y_mk]
+    ring
+  have hLpos : 0 < L := by
+    have : 0 < ((P.vertex (P.next e)).y - (P.vertex e).y) ^ 2 :=
+      lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 (sub_ne_zero.mpr hy.symm)))
+    rw [hL]; nlinarith [sq_nonneg ((P.vertex (P.next e)).x - (P.vertex e).x)]
+  have hγ : Tendsto (fun t : ℝ => m + t • nrm) (𝓝 0) (𝓝 m) := by
+    have : Continuous fun t : ℝ => m + t • nrm := by fun_prop
+    simpa using this.tendsto 0
+  have hEt := hγ.eventually hE
+  obtain ⟨t, htE, ht⟩ := ((hEt.filter_mono nhdsWithin_le_nhds).and
+    (self_mem_nhdsWithin : Ioi (0 : ℝ) ∈ 𝓝[>] 0)).exists
+  obtain ⟨t', htE', ht'⟩ := ((hEt.filter_mono nhdsWithin_le_nhds).and
+    (self_mem_nhdsWithin : Iio (0 : ℝ) ∈ 𝓝[<] 0)).exists
+  have ho : 0 < orient (P.vertex e) (P.vertex (P.next e)) (m + t • nrm) := by
+    rw [horient]; exact mul_pos ht hLpos
+  have ho' : orient (P.vertex e) (P.vertex (P.next e)) (m + t' • nrm) < 0 := by
+    rw [horient]; exact mul_neg_of_neg_of_pos ht' hLpos
+  have notOnB : ∀ q, (∀ k, k ≠ e → q ∉ segment ℝ (P.vertex k) (P.vertex (P.next k))) →
+      orient (P.vertex e) (P.vertex (P.next e)) q ≠ 0 → ¬ P.OnBoundary q := by
+    rintro q hq h₀ ⟨k, hk⟩
+    by_cases hke : k = e
+    · subst hke
+      exact h₀ (Segment.orient_eq_zero_of_mem ⟨_, _⟩ hk)
+    · exact hq k hke hk
+  refine ⟨_, _, htE.2.2.2 ho, notOnB _ htE.2.2.1 ho.ne', notOnB _ htE'.2.2.1 ho'.ne, ?_⟩
+  rw [htE.1, htE'.1, htE.2.1 ho.ne', htE'.2.1 ho'.ne]
+  simp [ho, not_lt.mpr ho'.le]
+  ring
+
+/-! ## The ear triangle is inside -/
+
+/-- Next to an ear there are points off the boundary on both sides of one of
+its two edges, the inner one in the interior of the ear triangle, and the
+winding number there is one more than across the edge. -/
+theorem IsEar.exists_sides (hP : P.IsSimple) {i : Fin P.n} (h : P.IsEar i) :
+    ∃ q q', q ∈ interior (P.earTriangle i).toSet ∧ ¬ P.OnBoundary q ∧ ¬ P.OnBoundary q' ∧
+      P.windingNumber q = P.windingNumber q' + 1 := by
+  have hT := h.isCCW
+  have hA : 0 < orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) := h.convex
+  by_cases hAB : (P.prevVertex i).y = (P.vertex i).y
+  · -- Across the edge from vertex `i`, which is not horizontal.
+    have hBC : (P.vertex i).y ≠ (P.nextVertex i).y := by
+      intro hBC
+      have : orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) = 0 := by
+        rw [orient_def, hAB, hBC]; ring
+      exact hA.ne' this
+    refine hP.exists_sides i rfl rfl hBC ?_
+    set m : Point2D := (1 / 2 : ℝ) • P.vertex i + (1 / 2 : ℝ) • P.nextVertex i
+    have h₁ : 0 < orient (P.prevVertex i) (P.vertex i) m := by
+      have : orient (P.prevVertex i) (P.vertex i) m =
+          orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) / 2 := by
+        simp only [m, orient_def, x_add, x_smul, y_add, y_smul]; ring
+      rw [this]; linarith
+    have h₃ : 0 < orient (P.nextVertex i) (P.prevVertex i) m := by
+      have : orient (P.nextVertex i) (P.prevVertex i) m =
+          orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) / 2 := by
+        simp only [m, orient_def, x_add, x_smul, y_add, y_smul]; ring
+      rw [this]; linarith
+    filter_upwards [eventually_orient_pos h₁, eventually_orient_pos h₃] with q hq₁ hq₃ hq₂
+    exact (Triangle.mem_interior_toSet_iff hT q).mpr ⟨hq₁, hq₂, hq₃⟩
+  · -- Across the edge into vertex `i`.
+    refine hP.exists_sides (P.prev i) rfl (by rw [next_prev]) hAB ?_
+    set m : Point2D := (1 / 2 : ℝ) • P.prevVertex i + (1 / 2 : ℝ) • P.vertex i
+    have h₂ : 0 < orient (P.vertex i) (P.nextVertex i) m := by
+      have : orient (P.vertex i) (P.nextVertex i) m =
+          orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) / 2 := by
+        simp only [m, orient_def, x_add, x_smul, y_add, y_smul]; ring
+      rw [this]; linarith
+    have h₃ : 0 < orient (P.nextVertex i) (P.prevVertex i) m := by
+      have : orient (P.nextVertex i) (P.prevVertex i) m =
+          orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) / 2 := by
+        simp only [m, orient_def, x_add, x_smul, y_add, y_smul]; ring
+      rw [this]; linarith
+    filter_upwards [eventually_orient_pos h₂, eventually_orient_pos h₃] with q hq₂ hq₃ hq₁
+    exact (Triangle.mem_interior_toSet_iff hT q).mpr ⟨hq₁, hq₂, hq₃⟩
+
+/-- On the interior of an ear triangle the winding number is `1`, for a polygon
+that winds `0` or `1` times. -/
+theorem IsEar.windingNumber_eq_one (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n}
+    (h : P.IsEar i) (hJ : P.WindsZeroOrOne) {x : Point2D}
+    (hx : x ∈ interior (P.earTriangle i).toSet) : P.windingNumber x = 1 := by
+  obtain ⟨q, q', hqT, hq, hq', hqq⟩ := h.exists_sides hP
+  have h₁ : P.windingNumber q = 1 := by
+    rcases hJ q hq with e | e <;> rcases hJ q' hq' with e' | e' <;> omega
+  rw [← h₁]
+  exact P.windingNumber_eq_of_isPreconnected (Triangle.isPreconnected_interior _)
+    (fun y hy => h.not_onBoundary_of_mem_interior hP h4 hy) hx hqT
+
+theorem IsEar.interior_earTriangle_subset_openRegion (hP : P.IsSimple) (h4 : 4 ≤ P.n)
+    {i : Fin P.n} (h : P.IsEar i) (hJ : P.WindsZeroOrOne) :
+    interior (P.earTriangle i).toSet ⊆ P.openRegion := fun x hx =>
+  ⟨h.not_onBoundary_of_mem_interior hP h4 hx, by
+    rw [h.windingNumber_eq_one hP h4 hJ hx]; exact one_ne_zero⟩
+
+/-- The closed ear triangle lies in the closed region: it is the closure of
+its interior, and the region is closed. -/
+theorem IsEar.earTriangle_subset_region (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n}
+    (h : P.IsEar i) (hJ : P.WindsZeroOrOne) : (P.earTriangle i).toSet ⊆ P.region := by
+  rw [← Triangle.closure_interior h.isCCW, P.isClosed_region.closure_subset_iff]
+  exact fun x hx => P.openRegion_subset_region (h.interior_earTriangle_subset_openRegion hP h4 hJ hx)
+
+theorem IsEar.earDiagonal_subset_region (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n}
+    (h : P.IsEar i) (hJ : P.WindsZeroOrOne) : (P.earDiagonal i).toSet ⊆ P.region :=
+  (earDiagonal_subset_earTriangle i).trans (h.earTriangle_subset_region hP h4 hJ)
+
+/-- The region splits along an ear, with no assumption on the ear triangle. -/
+theorem IsEar.region_removeEar (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n} (h : P.IsEar i)
+    (hJ : P.WindsZeroOrOne) :
+    P.region = (P.removeEar i).region ∪ (P.earTriangle i).toSet :=
+  RawPolygon.region_removeEar (by omega) h.convex (h.earTriangle_subset_region hP h4 hJ)
+
+/-- The smaller polygon's open region misses the interior of the ear triangle:
+there its winding number is `1 - 1 = 0`. -/
+theorem IsEar.disjoint_openRegion_removeEar (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n}
+    (h : P.IsEar i) (hJ : P.WindsZeroOrOne) :
+    Disjoint (P.removeEar i).openRegion (interior (P.earTriangle i).toSet) := by
+  rw [Set.disjoint_left]
+  rintro x ⟨-, hw⟩ hx
+  have hP1 := h.windingNumber_eq_one hP h4 hJ hx
+  have hT1 := Triangle.winding3_eq_one h.isCCW ((Triangle.mem_interior_toSet_iff h.isCCW x).mp hx)
+  have := windingNumber_removeEar P (by omega) i x
+  rw [hP1, hT1] at this
+  exact hw (by omega)
+
 end RawPolygon
+
+namespace SimplePolygon
+
+theorem earTriangle_subset_toRegion (P : SimplePolygon) (h4 : 4 ≤ P.1.n) {i : Fin P.1.n}
+    (h : P.1.IsEar i) (hJ : P.1.WindsZeroOrOne) : (P.1.earTriangle i).toSet ⊆ P.toRegion :=
+  h.earTriangle_subset_region P.2 h4 hJ
+
+/-- The region of a simple polygon splits along an ear into the region of the
+smaller simple polygon and the ear triangle. -/
+theorem toRegion_eq_removeEar_union (P : SimplePolygon) (h4 : 4 ≤ P.1.n) (i : Fin P.1.n)
+    (h : P.1.IsEar i) (hJ : P.1.WindsZeroOrOne) :
+    P.toRegion = (P.removeEar h4 i h).toRegion ∪ (P.1.earTriangle i).toSet :=
+  h.region_removeEar P.2 h4 hJ
+
+theorem disjoint_toOpenRegion_removeEar (P : SimplePolygon) (h4 : 4 ≤ P.1.n) (i : Fin P.1.n)
+    (h : P.1.IsEar i) (hJ : P.1.WindsZeroOrOne) :
+    Disjoint (P.removeEar h4 i h).toOpenRegion (interior (P.1.earTriangle i).toSet) :=
+  h.disjoint_openRegion_removeEar P.2 h4 hJ
+
+end SimplePolygon
 
 end ComputationalGeometry
