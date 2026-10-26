@@ -20,11 +20,13 @@ For an ear of a simple polygon with at least four vertices:
 What 3 does not say is whether the value inside is `1` (the triangle is in
 the polygon) or `0` (it is outside). Nothing local can say it: traversed
 clockwise, the L-shaped hexagon has an ear in the notch, outside the polygon
-(`Examples.ellCW_isEar_two`). For a counterclockwise simple polygon the
-Jordan curve theorem gives it, in this form: off the boundary the polygon
-winds `0` or `1` times (`WindsZeroOrOne`). That is the one global fact the
-theorems below assume. With it, the winding number is `1` on the interior of
-the ear triangle (`IsEar.windingNumber_eq_one`), so
+(`Examples.ellCW_isEar_two`). The theorems below assume the global fact
+that off the boundary the polygon winds `0` or `1` times (`WindsZeroOrOne`).
+Every counterclockwise simple polygon does
+(`IsSimple.windsZeroOrOne_of_isCCW`, in `Polygon/Jordan.lean`, which also
+restates these theorems with `IsCCW` in its place). With it, the winding
+number is `1` on the interior of the ear triangle
+(`IsEar.windingNumber_eq_one`), so
 
 - the interior of the ear triangle is in the open region and the closed ear
   triangle in the closed region (`IsEar.interior_earTriangle_subset_openRegion`,
@@ -69,9 +71,9 @@ namespace RawPolygon
 
 variable {P : RawPolygon}
 
-/-- Off the boundary the ring winds `0` or `1` times. For a counterclockwise
-simple polygon this is what the Jordan curve theorem says about winding
-numbers; it is not proved here. -/
+/-- Off the boundary the ring winds `0` or `1` times. Every counterclockwise
+simple polygon does (`IsSimple.windsZeroOrOne_of_isCCW`); this is what the
+Jordan curve theorem says about winding numbers. -/
 def WindsZeroOrOne (P : RawPolygon) : Prop :=
   ∀ p, ¬ P.OnBoundary p → P.windingNumber p = 0 ∨ P.windingNumber p = 1
 

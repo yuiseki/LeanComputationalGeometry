@@ -5,9 +5,37 @@ import LeanComputationalGeometry.Polygon.WindingArea
 # Winding numbers of simple polygons
 
 A simple polygon winds `0` or `1` times around every point off its boundary
-when it is counterclockwise, and `0` or `-1` times when it is clockwise. This
-is the winding-number half of the Jordan curve theorem for polygons; the
-proof here uses only the polygon's finitely many segments.
+when it is counterclockwise (`IsSimple.windsZeroOrOne_of_isCCW`), and `0` or
+`-1` times when it is clockwise
+(`IsSimple.windingNumber_eq_zero_or_neg_one_of_isCW`). This is the
+winding-number half of the Jordan curve theorem for polygons. The proof uses
+only the polygon's finitely many segments, the local constancy of the winding
+number (`Polygon/WindingTopology.lean`) and, for the orientation, the integral
+of the winding number (`Polygon/WindingArea.lean`).
+
+1. Beside every edge, on its left, lies a thin open triangle (`thinLeft`);
+   around every vertex, on the left of its two edges, a small sector
+   (`leftSector`). Small enough, they avoid the boundary, so the winding number
+   is constant on each. A thin triangle reaches into the sectors at both ends
+   of its edge, and the sector at a vertex is shared by the edges before and
+   after it, so the winding number takes one value `L` beside every edge
+   (`IsSimple.exists_left_value`). The same for the reversed ring gives one
+   value `R` on the right of every edge (`IsSimple.reverse`).
+2. From a point off the boundary, a straight path aimed inside an edge and
+   away from every line through a vertex first meets the boundary inside an
+   edge, from one side (`IsSimple.exists_approach`). So every point off the
+   boundary winds `L` or `R` times.
+3. Across a non-horizontal edge `L = R + 1` (`IsSimple.exists_sides₂`), and
+   far to the right the winding number is `0`; so `{L, R}` is `{1, 0}` or
+   `{0, -1}` (`IsSimple.windingNumber_cases`). In particular the winding
+   number is at most `1` in absolute value (`IsSimple.abs_windingNumber_le_one`).
+4. Which of the two it is, is the sign of the shoelace sum: the winding number
+   integrates to half the shoelace sum, so if the polygon wound `0` or `-1`
+   times its shoelace sum would not be positive.
+
+The ear theorems of `Polygon/EarRegion.lean` then hold for every
+counterclockwise simple polygon with no further assumption
+(`IsEar.region_removeEar_of_isCCW` and its companions).
 -/
 
 namespace ComputationalGeometry

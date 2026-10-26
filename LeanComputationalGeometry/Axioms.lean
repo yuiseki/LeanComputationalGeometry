@@ -484,3 +484,143 @@ builds it.
 /-- info: 'ComputationalGeometry.SimplePolygon.windsZeroOrOne_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.SimplePolygon.windsZeroOrOne_removeEar
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.reverse' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.reverse
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.not_forall_orient_eq_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.not_forall_orient_eq_zero
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_edge_y_ne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_edge_y_ne
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_orient_ne_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_orient_ne_zero
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.dot_pos_of_locallyDegenerate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.dot_pos_of_locallyDegenerate
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.eventually_leftSector_not_onBoundary' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.eventually_leftSector_not_onBoundary
+
+/-- info: 'ComputationalGeometry.RawPolygon.isPreconnected_leftSector' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.isPreconnected_leftSector
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.eventually_thinLeft_not_onBoundary' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.eventually_thinLeft_not_onBoundary
+
+/-- info: 'ComputationalGeometry.RawPolygon.eventually_mem_thinLeft' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.eventually_mem_thinLeft
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.eventually_thinLeft_meets_leftSector' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.eventually_thinLeft_meets_leftSector
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.eventually_thinLeft_meets_leftSector_next' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.eventually_thinLeft_meets_leftSector_next
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_left_value' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_left_value
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_approach' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_approach
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_sides₂' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_sides₂
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.windingNumber_cases' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.windingNumber_cases
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.abs_windingNumber_le_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.abs_windingNumber_le_one
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.windsZeroOrOne_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.windsZeroOrOne_of_isCCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.windingNumber_eq_zero_or_neg_one_of_isCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.windingNumber_eq_zero_or_neg_one_of_isCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.WindsZeroOrOne.signedArea2_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.WindsZeroOrOne.signedArea2_nonneg
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.earTriangle_subset_region_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.earTriangle_subset_region_of_isCCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.interior_earTriangle_subset_openRegion_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.interior_earTriangle_subset_openRegion_of_isCCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.region_removeEar_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.region_removeEar_of_isCCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.disjoint_openRegion_removeEar_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.disjoint_openRegion_removeEar_of_isCCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.windsZeroOrOne_removeEar_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.windsZeroOrOne_removeEar_of_isCCW
+
+/-- info: 'ComputationalGeometry.SimplePolygon.windsZeroOrOne_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.windsZeroOrOne_of_isCCW
+
+/-- info: 'ComputationalGeometry.SimplePolygon.toRegion_eq_removeEar_union_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.toRegion_eq_removeEar_union_of_isCCW
+
+/-- info: 'ComputationalGeometry.SimplePolygon.disjoint_toOpenRegion_removeEar_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.disjoint_toOpenRegion_removeEar_of_isCCW
+
+/-- info: 'ComputationalGeometry.edgeContribution_mk' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.edgeContribution_mk
+
+/-- info: 'ComputationalGeometry.integral_edgeContribution_mk' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.integral_edgeContribution_mk
+
+/-- info: 'ComputationalGeometry.integral_crossSign' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.integral_crossSign
+
+/-- info: 'ComputationalGeometry.RawPolygon.signedArea2_eq_integral' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.signedArea2_eq_integral
+
+/-- info: 'ComputationalGeometry.RawPolygon.signedArea2_nonneg_of_windingNumber_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.signedArea2_nonneg_of_windingNumber_nonneg
+
+/-- info: 'ComputationalGeometry.Examples.square_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_isCCW
+
+/-- info: 'ComputationalGeometry.Examples.ell_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ell_isCCW
+
+/-- info: 'ComputationalGeometry.Examples.ellCW_isCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ellCW_isCW

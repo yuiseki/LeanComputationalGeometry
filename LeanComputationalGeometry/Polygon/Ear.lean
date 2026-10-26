@@ -107,7 +107,9 @@ def earTriangle (i : Fin P.n) : Triangle := ⟨P.prevVertex i, P.vertex i, P.nex
 /-- The segment joining the two neighbours of vertex `i`. -/
 def earDiagonal (i : Fin P.n) : Segment := ⟨P.prevVertex i, P.nextVertex i⟩
 
-/-- The ring turns left at vertex `i`. -/
+/-- The ring turns left at vertex `i`. This is a local test that depends on
+the direction of traversal: for a counterclockwise polygon a left turn is a
+convex corner, but for a clockwise one it is a reflex corner. -/
 def ConvexVertex (i : Fin P.n) : Prop :=
   0 < orient (P.prevVertex i) (P.vertex i) (P.nextVertex i)
 
@@ -127,7 +129,11 @@ theorem convex_or_reflex_or_locallyDegenerate (i : Fin P.n) :
   · exact Or.inr (Or.inl h)
 
 /-- Vertex `i` is an ear: it is convex, and no other vertex lies in the closed
-ear triangle. -/
+ear triangle. Like `ConvexVertex` this depends on the direction of
+traversal: the ear triangle of an ear of a counterclockwise simple polygon
+lies inside it (`IsEar.earTriangle_subset_region_of_isCCW`), but a clockwise
+polygon can pass the test at a corner whose ear triangle is outside
+(`Examples.ellCW_earTriangle_not_subset_region`). -/
 structure IsEar (i : Fin P.n) : Prop where
   convex : P.ConvexVertex i
   empty : ∀ j, j ≠ P.prev i → j ≠ i → j ≠ P.next i → P.vertex j ∉ (P.earTriangle i).toSet

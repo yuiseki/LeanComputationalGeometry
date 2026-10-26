@@ -1,4 +1,4 @@
-import LeanComputationalGeometry.Polygon.EarRegion
+import LeanComputationalGeometry.Polygon.Jordan
 import LeanComputationalGeometry.Examples.Ears
 
 /-!
@@ -13,6 +13,10 @@ Traversed clockwise, the L-shaped hexagon is still simple and still has an
 ear in the sense of `IsEar` at its inner corner, but that ear triangle is the
 notch, outside the polygon: the orientation assumption hidden in
 `WindsZeroOrOne` cannot be dropped.
+
+The direct computations of `WindsZeroOrOne` are kept as regression tests; the
+general theorem `IsSimple.windsZeroOrOne_of_isCCW` gives the same from the
+signed areas.
 -/
 
 namespace ComputationalGeometry.Examples
@@ -223,6 +227,46 @@ theorem ellCW_not_windsZeroOrOne : ¬ ellCW.WindsZeroOrOne := by
     rw [ellCW_windingNumber]
     norm_num [edgeContribution, orient_def]
   rcases hJ _ hnb with h | h <;> rw [hw] at h <;> norm_num at h
+
+/-! ## From the orientation -/
+
+theorem square_isCCW : square.IsCCW := by
+  rw [RawPolygon.IsCCW, square_signedArea2]; norm_num
+
+theorem ell_isCCW : ell.IsCCW := by
+  rw [RawPolygon.IsCCW, ell_signedArea2]; norm_num
+
+theorem ellCW_signedArea2 : ellCW.signedArea2 = -6 := by
+  show ∑ i : Fin 6, cross (![mk 0 2, mk 1 2, mk 1 1, mk 2 1, mk 2 0, mk 0 0] i)
+    (![mk 0 2, mk 1 2, mk 1 1, mk 2 1, mk 2 0, mk 0 0] (finRotate 6 i)) = -6
+  rw [Fin.sum_univ_six]
+  simp [cross]
+  norm_num
+
+theorem ellCW_isCW : ellCW.IsCW := by
+  rw [RawPolygon.IsCW, ellCW_signedArea2]; norm_num
+
+/-- The general theorem gives what `square_windsZeroOrOne` computed... -/
+example : square.WindsZeroOrOne := square_isSimple.windsZeroOrOne_of_isCCW square_isCCW
+
+/-- ...and `ell_windsZeroOrOne`. -/
+example : ell.WindsZeroOrOne := ell_isSimple.windsZeroOrOne_of_isCCW ell_isCCW
+
+/-- The clockwise L winds `0` or `-1` times. -/
+example (p : Point2D) (hp : ¬ ellCW.OnBoundary p) :
+    ellCW.windingNumber p = 0 ∨ ellCW.windingNumber p = -1 :=
+  ellCW_isSimple.windingNumber_eq_zero_or_neg_one_of_isCW ellCW_isCW hp
+
+/-- The ear theorems need only simplicity and orientation. -/
+example : square.region = (square.removeEar 0).region ∪ (square.earTriangle 0).toSet :=
+  square_isEar_zero.region_removeEar_of_isCCW square_isSimple square_isCCW le_rfl
+
+example : Disjoint (ell.removeEar 1).openRegion (interior (ell.earTriangle 1).toSet) :=
+  ell_isEar_one.disjoint_openRegion_removeEar_of_isCCW ell_isSimple ell_isCCW
+    (by show 4 ≤ 6; norm_num)
+
+example : (ell.removeEar 1).WindsZeroOrOne :=
+  ell_isEar_one.windsZeroOrOne_removeEar_of_isCCW ell_isSimple ell_isCCW (by show 4 ≤ 6; norm_num)
 
 end
 
