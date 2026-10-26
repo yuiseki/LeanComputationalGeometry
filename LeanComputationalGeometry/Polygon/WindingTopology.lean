@@ -267,6 +267,11 @@ theorem crossRight_of_right_level {p a b : Point2D} (hb : b.y = p.y) (h : p ∉ 
     simp only [lt_x_iff_of_horizontal ha hb h]
   · simp [crossRight, ha, hb]
 
+theorem isClosed_segment (a b : Point2D) : IsClosed (segment ℝ a b) := by
+  rw [segment_eq_image_lineMap]
+  exact (isCompact_Icc.image
+    (AffineMap.lineMap a b : ℝ →ᵃ[ℝ] Point2D).continuous_of_finiteDimensional).isClosed
+
 /-! ## The ring near a point off its boundary -/
 
 namespace RawPolygon
@@ -338,6 +343,107 @@ theorem windingNumber_eq_of_isPreconnected {C : Set Point2D} (hC : IsPreconnecte
     P.windingNumber p = P.windingNumber q :=
   hC.constant (fun x hx => (P.continuousAt_windingNumber (havoid x hx)).continuousWithinAt) hp hq
 
+/-! ## Open and closed regions -/
+
+theorem isClosed_onBoundary : IsClosed {p | P.OnBoundary p} := by
+  have : {p | P.OnBoundary p} = ⋃ i, segment ℝ (P.vertex i) (P.vertex (P.next i)) := by
+    ext p
+    simp [OnBoundary, edge, Segment.toSet]
+  rw [this]
+  exact isClosed_iUnion_of_finite fun i => isClosed_segment _ _
+
+theorem eventually_not_onBoundary {p : Point2D} (hp : ¬ P.OnBoundary p) :
+    ∀ᶠ q in 𝓝 p, ¬ P.OnBoundary q :=
+  P.isClosed_onBoundary.isOpen_compl.mem_nhds hp
+
+/-- The open region is open. -/
+theorem isOpen_openRegion : IsOpen P.openRegion := by
+  rw [isOpen_iff_mem_nhds]
+  rintro p ⟨hb, hw⟩
+  filter_upwards [P.eventually_not_onBoundary hb, P.windingNumber_eventually_eq hb] with q hq hwq
+  exact ⟨hq, by rw [hwq]; exact hw⟩
+
+/-- The closed region is closed. -/
+theorem isClosed_region : IsClosed P.region := by
+  rw [← isOpen_compl_iff, isOpen_iff_mem_nhds]
+  intro p hp
+  have hp' : ¬ P.OnBoundary p ∧ P.windingNumber p = 0 := by
+    simpa [region, not_or] using hp
+  filter_upwards [P.eventually_not_onBoundary hp'.1, P.windingNumber_eventually_eq hp'.1]
+    with q hq hwq
+  simp only [region, mem_compl_iff, mem_ofPred_eq, not_or, not_not]
+  exact ⟨hq, by rw [hwq]; exact hp'.2⟩
+
+/-! ## Across an edge -/
+
+/-- Near a point on no edge but `j`, at a height different from both ends of
+edge `j`, the winding number is a constant plus the contribution of edge
+`j`. -/
+theorem windingNumber_eventually_eq_add_edge {p : Point2D} (j : Fin P.n)
+    (hoff : ∀ k, k ≠ j → p ∉ segment ℝ (P.vertex k) (P.vertex (P.next k)))
+    (ha : (P.vertex j).y ≠ p.y) (hb : (P.vertex (P.next j)).y ≠ p.y) :
+    ∃ K : ℤ, ∀ᶠ q in 𝓝 p,
+      P.windingNumber q = K + edgeContribution q (P.vertex j) (P.vertex (P.next j)) := by
+  classical
+  set X : Fin P.n → ℤ := fun i => crossRight p (P.vertex i) (P.vertex (P.next i)) with hXdef
+  set T : Point2D → Fin P.n → ℤ := fun q i =>
+    (atOrBelow q (P.vertex i) - atOrBelow q (P.vertex (P.next i))) * X i with hTdef
+  have hc : ∀ᶠ q in 𝓝 p, ∀ k, k ≠ j →
+      edgeContribution q (P.vertex k) (P.vertex (P.next k)) = T q k := by
+    refine eventually_all.mpr fun k => ?_
+    by_cases hk : k = j
+    · exact Eventually.of_forall fun q h => absurd hk h
+    · filter_upwards [edgeContribution_eventually_eq (hoff k hk)] with q hq _
+      exact hq
+  -- The two edges at a vertex at the height of `p` are not edge `j`.
+  have hX : ∀ i, (P.vertex i).y = p.y → X i = X (P.prev i) := by
+    intro i hi
+    have hij : i ≠ j := fun e => ha (e ▸ hi)
+    have hpj : P.prev i ≠ j := fun e => hb (by rw [← e, next_prev]; exact hi)
+    have h' := hoff (P.prev i) hpj
+    rw [next_prev] at h'
+    simp only [hXdef, next_prev]
+    rw [crossRight_of_left_level hi, crossRight_of_right_level hi h']
+  -- The term of edge `j` in the regrouped sum does not change either.
+  have hTj : ∀ᶠ q in 𝓝 p, T q j = T p j := by
+    have e : ∀ {v : Point2D}, v.y ≠ p.y → ∀ᶠ q in 𝓝 p, atOrBelow q v = atOrBelow p v := by
+      intro v hv
+      rcases lt_or_gt_of_ne hv with h | h
+      · filter_upwards [eventually_y_gt h] with q hq
+        rw [atOrBelow_of_le hq.le, atOrBelow_of_le h.le]
+      · filter_upwards [eventually_y_lt h] with q hq
+        rw [atOrBelow_of_lt hq, atOrBelow_of_lt h]
+    filter_upwards [e ha, e hb] with q h₁ h₂
+    simp only [hTdef, h₁, h₂]
+  refine ⟨∑ i, atOrBelow p (P.vertex i) * (X i - X (P.prev i)) - T p j, ?_⟩
+  filter_upwards [hc, hTj, P.eventually_sum_atOrBelow_eq X hX] with q hq hqj hsum
+  have hsplit : P.windingNumber q = ∑ i, T q i +
+      (edgeContribution q (P.vertex j) (P.vertex (P.next j)) - T q j) := by
+    rw [windingNumber]
+    have : ∀ i, edgeContribution q (P.vertex i) (P.vertex (P.next i)) =
+        T q i + if i = j then edgeContribution q (P.vertex j) (P.vertex (P.next j)) - T q j
+          else 0 := by
+      intro i
+      by_cases hi : i = j
+      · subst hi; simp
+      · simp [hi, hq i hi]
+    rw [Finset.sum_congr rfl fun i _ => this i, Finset.sum_add_distrib, Finset.sum_ite_eq']
+    simp
+  have hT : ∑ i, T q i = ∑ i, atOrBelow q (P.vertex i) * (X i - X (P.prev i)) :=
+    P.sum_sub_next_mul (fun i => atOrBelow q (P.vertex i)) X
+  rw [hsplit, hT, hsum, hqj]
+  ring
+
 end RawPolygon
+
+namespace SimplePolygon
+
+theorem isOpen_toOpenRegion (P : SimplePolygon) : IsOpen P.toOpenRegion := P.1.isOpen_openRegion
+
+theorem isClosed_toRegion (P : SimplePolygon) : IsClosed P.toRegion := P.1.isClosed_region
+
+theorem isClosed_boundary (P : SimplePolygon) : IsClosed P.boundary := P.1.isClosed_onBoundary
+
+end SimplePolygon
 
 end ComputationalGeometry
