@@ -216,6 +216,45 @@ theorem winding3_ne_zero_iff (h : T.IsCCW) (hnb : ¬ T.OnEdge p) :
   · exact r₂.mp (winding3_ne_zero_iff_of_up h₂ n₂ hc ha hb)
   · exact winding3_ne_zero_iff_of_above ha hb hc
 
+/-- Strictly inside a counterclockwise triangle the winding number is `1`. -/
+theorem winding3_eq_one (h : T.IsCCW) (hs : T.StrictContainsTest p) : T.winding3 p = 1 := by
+  have up : ∀ {T : Triangle}, T.StrictContainsTest p → T.a.y ≤ p.y → p.y < T.b.y →
+      p.y < T.c.y → T.winding3 p = 1 := by
+    intro T hs ha hb hc
+    unfold winding3
+    rw [edgeContribution_of_up ha hb, edgeContribution_of_above hb hc,
+      edgeContribution_of_down hc ha]
+    simp [hs.1, not_lt.mpr hs.2.2.le]
+  have down : ∀ {T : Triangle}, T.StrictContainsTest p → p.y < T.a.y → T.b.y ≤ p.y →
+      T.c.y ≤ p.y → T.winding3 p = 1 := by
+    intro T hs ha hb hc
+    unfold winding3
+    rw [edgeContribution_of_down ha hb, edgeContribution_of_below hb hc,
+      edgeContribution_of_up hc ha]
+    simp [hs.2.2, not_lt.mpr hs.1.le]
+  have s₁ : T.rotate.StrictContainsTest p := strictContainsTest_rotate.mpr hs
+  have s₂ : T.rotate.rotate.StrictContainsTest p := strictContainsTest_rotate.mpr s₁
+  have r₁ : T.rotate.winding3 p = T.winding3 p := winding3_rotate T p
+  have r₂ : T.rotate.rotate.winding3 p = T.winding3 p := by rw [winding3_rotate, winding3_rotate]
+  rcases le_or_gt T.a.y p.y with ha | ha <;> rcases le_or_gt T.b.y p.y with hb | hb <;>
+    rcases le_or_gt T.c.y p.y with hc | hc
+  · have := (winding3_ne_zero_iff_of_below h ha hb hc).mpr hs
+    unfold winding3 at this
+    rw [edgeContribution_of_below ha hb, edgeContribution_of_below hb hc,
+      edgeContribution_of_below hc ha] at this
+    simp at this
+  · rw [← r₂]; exact down s₂ hc ha hb
+  · rw [← r₁]; exact down s₁ hb hc ha
+  · exact up hs ha hb hc
+  · exact down hs ha hb hc
+  · rw [← r₁]; exact up s₁ hb hc ha
+  · rw [← r₂]; exact up s₂ hc ha hb
+  · have := (winding3_ne_zero_iff_of_above ha hb hc).mpr hs
+    unfold winding3 at this
+    rw [edgeContribution_of_above ha hb, edgeContribution_of_above hb hc,
+      edgeContribution_of_above hc ha] at this
+    simp at this
+
 /-! ## The regions of a counterclockwise triangle -/
 
 theorem onBoundary_toPolygon_iff_onEdge (h : T.IsCCW) : T.toPolygon.OnBoundary p ↔ T.OnEdge p := by

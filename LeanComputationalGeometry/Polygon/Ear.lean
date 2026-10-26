@@ -175,11 +175,10 @@ theorem IsSimple.vertex_mem_edge (hP : P.IsSimple) {j k : Fin P.n}
 theorem edge_toSet (j : Fin P.n) :
     (P.edge j).toSet = segment ℝ (P.vertex j) (P.vertex (P.next j)) := rfl
 
-/-- Edges away from an ear miss its diagonal: they miss the whole ear
-triangle. -/
-theorem IsEar.disjoint_edge_earDiagonal (hP : P.IsSimple) {i : Fin P.n} (h : P.IsEar i)
+/-- Edges away from an ear miss the closed ear triangle. -/
+theorem IsEar.disjoint_edge_earTriangle (hP : P.IsSimple) {i : Fin P.n} (h : P.IsEar i)
     {j : Fin P.n} (h₁ : j ≠ P.prev (P.prev i)) (h₂ : j ≠ P.prev i) (h₃ : j ≠ i)
-    (h₄ : j ≠ P.next i) : Disjoint (P.edge j).toSet (P.earDiagonal i).toSet := by
+    (h₄ : j ≠ P.next i) : Disjoint (P.edge j).toSet (P.earTriangle i).toSet := by
   have hn₁ : P.next j ≠ P.prev i := fun e => h₁ (by rw [← e, prev_next])
   have hn₂ : P.next j ≠ i := fun e => h₂ (by rw [← e, prev_next])
   have hn₃ : P.next j ≠ P.next i := fun e => h₃ (P.next_injective e)
@@ -187,10 +186,15 @@ theorem IsEar.disjoint_edge_earDiagonal (hP : P.IsSimple) {i : Fin P.n} (h : P.I
   have hbc := hP.nonadjacent_disjoint j i h₃ hn₂ (Ne.symm h₄)
   rw [edge_toSet, edge_toSet, next_prev] at hab
   rw [edge_toSet, edge_toSet] at hbc
-  have key := Triangle.disjoint_toSet_of_avoid h.isCCW (h.empty j h₂ h₃ h₄)
-    (h.empty (P.next j) hn₁ hn₂ hn₃) hab hbc
   rw [edge_toSet]
-  exact key.mono_right (earDiagonal_subset_earTriangle i)
+  exact Triangle.disjoint_toSet_of_avoid h.isCCW (h.empty j h₂ h₃ h₄)
+    (h.empty (P.next j) hn₁ hn₂ hn₃) hab hbc
+
+/-- Edges away from an ear miss its diagonal. -/
+theorem IsEar.disjoint_edge_earDiagonal (hP : P.IsSimple) {i : Fin P.n} (h : P.IsEar i)
+    {j : Fin P.n} (h₁ : j ≠ P.prev (P.prev i)) (h₂ : j ≠ P.prev i) (h₃ : j ≠ i)
+    (h₄ : j ≠ P.next i) : Disjoint (P.edge j).toSet (P.earDiagonal i).toSet :=
+  (h.disjoint_edge_earTriangle hP h₁ h₂ h₃ h₄).mono_right (earDiagonal_subset_earTriangle i)
 
 /-- The edge before an ear meets the diagonal only at its start. -/
 theorem IsEar.edge_prev_prev_inter_earDiagonal (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n}
