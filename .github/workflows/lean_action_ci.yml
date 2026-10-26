@@ -1,0 +1,59 @@
+name: Lean Action CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: leanprover/lean-action@v1
+      - name: No sorry or admit
+        run: |
+          if grep -R -nE '\b(sorry|admit)\b' LeanComputationalGeometry LeanComputationalGeometry.lean; then
+            exit 1
+          fi
+      - name: No axiom of our own
+        run: |
+          if grep -R -nE '^\s*((private|protected|noncomputable)\s+)*axiom\s' LeanComputationalGeometry LeanComputationalGeometry.lean; then
+            exit 1
+          fi
+      - name: Library does not import Examples or the audit
+        run: |
+          if grep -rn -E '^import .*(Examples|Axioms)' LeanComputationalGeometry.lean LeanComputationalGeometry --include=*.lean | grep -vE '^LeanComputationalGeometry/(Examples/|Axioms\.lean)'; then
+            exit 1
+          fi
+
+  # LeanGeodesy, LeanGeospatial and LeanComputationalGeometry must stay
+  # importable together, on one plane. Each sibling is taken from the branch
+  # of the same name when it exists, so a coordinated change can be tested
+  # across all three before merging.
+  joint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: LeanComputationalGeometry
+      - name: Check out the sibling libraries
+        run: |
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          for sib in LeanGeodesy LeanGeospatial; do
+            if git ls-remote --exit-code --heads "https://github.com/yuiseki/$sib" "$branch" > /dev/null; then
+              ref="$branch"
+            else
+              ref=main
+            fi
+            echo "Using $sib $ref"
+            git clone --depth 1 --branch "$ref" "https://github.com/yuiseki/$sib" "$sib"
+          done
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: The three libraries share one plane
+        run: LeanComputationalGeometry/scripts/joint_check.sh LeanGeodesy LeanGeospatial LeanComputationalGeometry joint
