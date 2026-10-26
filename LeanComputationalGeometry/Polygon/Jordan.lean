@@ -934,6 +934,124 @@ theorem IsSimple.exists_approach (hP : P.IsSimple) {p : Point2D} (hp : ¬ P.OnBo
     filter_upwards [hev, self_mem_nhdsWithin] with δ hδ (hδ0 : 0 < δ)
     exact ⟨by rw [horient]; exact mul_pos hδ0 hκ, hδ.2⟩
 
+/-! ## Two values -/
+
+/-- The edge of the reversed ring that runs along edge `f` backwards. -/
+theorem reverse_vertex_rev_next (f : Fin P.n) :
+    P.reverse.vertex (Fin.rev (P.next f) : Fin P.reverse.n) = P.vertex (P.next f) :=
+  congrArg P.vertex (Fin.rev_rev (P.next f))
+
+theorem reverse_vertex_next_rev_next (f : Fin P.n) :
+    P.reverse.vertex (P.reverse.next (Fin.rev (P.next f) : Fin P.reverse.n)) = P.vertex f := by
+  have h₁ : Fin.rev (P.reverse.next (Fin.rev (P.next f) : Fin P.reverse.n)) =
+      P.prev (Fin.rev (Fin.rev (P.next f) : Fin P.reverse.n)) :=
+    P.rev_next_reverse (Fin.rev (P.next f) : Fin P.reverse.n)
+  have h₂ : (Fin.rev (Fin.rev (P.next f) : Fin P.reverse.n) : Fin P.n) = P.next f :=
+    Fin.rev_rev _
+  show P.vertex (Fin.rev (P.reverse.next (Fin.rev (P.next f) : Fin P.reverse.n))) = P.vertex f
+  exact (congrArg P.vertex h₁).trans
+    ((congrArg (fun k => P.vertex (P.prev k)) h₂).trans (by rw [prev_next]))
+
+/-- Near a point inside an edge, the points on its right are in the thin
+triangles beside it of the reversed ring. -/
+theorem eventually_mem_thinLeft_reverse (f : Fin P.n) {h : ℝ} (hh : 0 < h)
+    (hvv : P.vertex f ≠ P.vertex (P.next f)) {q₀ : Point2D}
+    (hq₀ : q₀ ∈ openSegment ℝ (P.vertex f) (P.vertex (P.next f))) :
+    ∀ᶠ q in 𝓝 q₀, orient (P.vertex f) (P.vertex (P.next f)) q < 0 →
+      q ∈ P.reverse.thinLeft (Fin.rev (P.next f) : Fin P.reverse.n) h := by
+  have h₁ := reverse_vertex_rev_next (P := P) f
+  have h₂ := reverse_vertex_next_rev_next (P := P) f
+  have key := P.reverse.eventually_mem_thinLeft (Fin.rev (P.next f) : Fin P.reverse.n) hh
+    (by rw [h₁, h₂]; exact hvv.symm) (q₀ := q₀) (by rw [h₁, h₂, openSegment_symm]; exact hq₀)
+  rw [h₁, h₂] at key
+  filter_upwards [key] with q hq hneg
+  exact hq (by rw [orient_swap₁₂]; linarith)
+
+/-- Off its boundary, a simple polygon winds either `0` or `1` times around
+every point, or `0` or `-1` times. -/
+theorem IsSimple.windingNumber_cases (hP : P.IsSimple) :
+    (∀ p, ¬ P.OnBoundary p → P.windingNumber p = 0 ∨ P.windingNumber p = 1) ∨
+      (∀ p, ¬ P.OnBoundary p → P.windingNumber p = 0 ∨ P.windingNumber p = -1) := by
+  obtain ⟨L, hL⟩ := hP.exists_left_value
+  obtain ⟨L', hL'⟩ := hP.reverse.exists_left_value
+  -- On the right of every edge the winding number is `-L'`.
+  have hR : ∀ f : Fin P.n, ∀ᶠ h in 𝓝[>] (0 : ℝ),
+      ∀ q ∈ P.reverse.thinLeft (Fin.rev (P.next f) : Fin P.reverse.n) h,
+        P.windingNumber q = -L' := by
+    intro f
+    filter_upwards [hL' (Fin.rev (P.next f) : Fin P.reverse.n)] with h hh q hq
+    have := hh q hq
+    rw [windingNumber_reverse] at this
+    omega
+  -- Every point off the boundary sees one of the two values.
+  have hval : ∀ p, ¬ P.OnBoundary p → P.windingNumber p = L ∨ P.windingNumber p = -L' := by
+    intro p hp
+    obtain ⟨f, q₀, hq₀, γ, hγ, hside⟩ := hP.exists_approach hp
+    have hvv : P.vertex f ≠ P.vertex (P.next f) := hP.edge_nondegenerate f
+    rcases hside with hside | hside
+    · left
+      obtain ⟨h, hh, hpos⟩ := ((hL f).and self_mem_nhdsWithin).exists
+      have hmem := hγ.eventually (eventually_mem_thinLeft f hpos hvv hq₀)
+      obtain ⟨δ, ⟨h₁, h₂⟩, h₃⟩ := (hside.and hmem).exists
+      rw [← h₂]; exact hh _ (h₃ h₁)
+    · right
+      obtain ⟨h, hh, hpos⟩ := ((hR f).and self_mem_nhdsWithin).exists
+      have hmem := hγ.eventually (eventually_mem_thinLeft_reverse f hpos hvv hq₀)
+      obtain ⟨δ, ⟨h₁, h₂⟩, h₃⟩ := (hside.and hmem).exists
+      rw [← h₂]; exact hh _ (h₃ h₁)
+  -- Across a non-horizontal edge, from right to left, the winding number goes up by one.
+  have hstep : L = -L' + 1 := by
+    obtain ⟨e, hey⟩ := hP.exists_edge_y_ne
+    have hvv : P.vertex e ≠ P.vertex (P.next e) := hP.edge_nondegenerate e
+    have hm : (1 / 2 : ℝ) • P.vertex e + (1 / 2 : ℝ) • P.vertex (P.next e) ∈
+        openSegment ℝ (P.vertex e) (P.vertex (P.next e)) :=
+      ⟨1 / 2, 1 / 2, by norm_num, by norm_num, by norm_num, rfl⟩
+    obtain ⟨h, hh, hpos⟩ := ((hL e).and self_mem_nhdsWithin).exists
+    obtain ⟨h', hh', hpos'⟩ := ((hR e).and self_mem_nhdsWithin).exists
+    obtain ⟨q, q', hq, hq', -, -, hqq⟩ := hP.exists_sides₂ e rfl rfl hey
+      (eventually_mem_thinLeft e hpos hvv hm) (eventually_mem_thinLeft_reverse e hpos' hvv hm)
+    rw [hh q hq, hh' q' hq'] at hqq
+    exact hqq
+  -- Far to the right the winding number is `0`.
+  have hzero : L = 0 ∨ -L' = 0 := by
+    set X := 1 + ∑ i, |(P.vertex i).x|
+    have hX : ∀ i, (P.vertex i).x < X := fun i => by
+      have := Finset.single_le_sum (f := fun i => |(P.vertex i).x|) (fun _ _ => abs_nonneg _)
+        (Finset.mem_univ i)
+      linarith [le_abs_self (P.vertex i).x]
+    set p₀ := Point2D.mk X 0
+    have hp₀ : ¬ P.OnBoundary p₀ := by
+      rintro ⟨j, hj⟩
+      rw [edge_toSet] at hj
+      obtain ⟨t, ht, htq⟩ := (Segment.mem_toSet_iff_exists ⟨_, _⟩).mp hj
+      have := congrArg Point2D.x htq
+      simp only [x_add, x_smul, p₀, Point2D.x_mk] at this
+      change (1 - t) * (P.vertex j).x + t * (P.vertex (P.next j)).x = X at this
+      have hm := max_lt (hX j) (hX (P.next j))
+      nlinarith [mul_nonneg (sub_nonneg.mpr ht.2)
+          (sub_nonneg.mpr (le_max_left (P.vertex j).x (P.vertex (P.next j)).x)),
+        mul_nonneg ht.1 (sub_nonneg.mpr (le_max_right (P.vertex j).x (P.vertex (P.next j)).x))]
+    have hw := P.windingNumber_eq_zero_of_right (p := p₀) (fun i => by simpa [p₀] using hX i)
+    rcases hval p₀ hp₀ with h | h
+    · left; rw [← h, hw]
+    · right; rw [← h, hw]
+  rcases hzero with h0 | h0
+  · right
+    intro p hp
+    rcases hval p hp with h | h
+    · left; rw [h, h0]
+    · right; rw [h]; omega
+  · left
+    intro p hp
+    rcases hval p hp with h | h
+    · right; rw [h]; omega
+    · left; rw [h, h0]
+
+/-- Off its boundary, a simple polygon winds at most once around any point. -/
+theorem IsSimple.abs_windingNumber_le_one (hP : P.IsSimple) {p : Point2D} (hp : ¬ P.OnBoundary p) :
+    |P.windingNumber p| ≤ 1 := by
+  rcases hP.windingNumber_cases with h | h <;> rcases h p hp with e | e <;> rw [e] <;> norm_num
+
 end RawPolygon
 
 end ComputationalGeometry

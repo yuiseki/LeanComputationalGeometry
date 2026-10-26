@@ -179,12 +179,13 @@ theorem IsSimple.not_mem_edge_of_mem_openSegment (hP : P.IsSimple) {e k : Fin P.
 
 /-- Next to the middle of a non-horizontal edge of a simple polygon there are
 points off the boundary on both sides, and the winding number on the left is
-one more than on the right. The left-hand points can be taken in any set `S`
-containing all left-hand points near the middle. -/
-theorem IsSimple.exists_sides (hP : P.IsSimple) (e : Fin P.n) {u w : Point2D}
-    (hu : P.vertex e = u) (hw : P.vertex (P.next e) = w) (hy : u.y ≠ w.y) {S : Set Point2D}
-    (hS : ∀ᶠ q in 𝓝 ((1 / 2 : ℝ) • u + (1 / 2 : ℝ) • w), 0 < orient u w q → q ∈ S) :
-    ∃ q q', q ∈ S ∧ ¬ P.OnBoundary q ∧ ¬ P.OnBoundary q' ∧
+one more than on the right. The points can be taken in any sets `S` and `S'`
+containing all points near the middle on the left and on the right. -/
+theorem IsSimple.exists_sides₂ (hP : P.IsSimple) (e : Fin P.n) {u w : Point2D}
+    (hu : P.vertex e = u) (hw : P.vertex (P.next e) = w) (hy : u.y ≠ w.y) {S S' : Set Point2D}
+    (hS : ∀ᶠ q in 𝓝 ((1 / 2 : ℝ) • u + (1 / 2 : ℝ) • w), 0 < orient u w q → q ∈ S)
+    (hS' : ∀ᶠ q in 𝓝 ((1 / 2 : ℝ) • u + (1 / 2 : ℝ) • w), orient u w q < 0 → q ∈ S') :
+    ∃ q q', q ∈ S ∧ q' ∈ S' ∧ ¬ P.OnBoundary q ∧ ¬ P.OnBoundary q' ∧
       P.windingNumber q = P.windingNumber q' + 1 := by
   subst hu hw
   set m : Point2D := (1 / 2 : ℝ) • P.vertex e + (1 / 2 : ℝ) • P.vertex (P.next e) with hmdef
@@ -222,7 +223,7 @@ theorem IsSimple.exists_sides (hP : P.IsSimple) (e : Fin P.n) {u w : Point2D}
     · exact Eventually.of_forall fun q h => absurd hk h
     · exact Filter.mem_of_superset ((isClosed_segment _ _).isOpen_compl.mem_nhds (hoff k hk))
         fun q hq _ => hq
-  have hE := hK.and (hd.and (hedges.and hS))
+  have hE := hK.and (hd.and (hedges.and (hS.and hS')))
   -- Walk away from the middle along the normal.
   set nrm : Point2D := Point2D.mk (-((P.vertex (P.next e)).y - (P.vertex e).y))
     ((P.vertex (P.next e)).x - (P.vertex e).x) with hnrm
@@ -255,10 +256,24 @@ theorem IsSimple.exists_sides (hP : P.IsSimple) (e : Fin P.n) {u w : Point2D}
     · subst hke
       exact h₀ (Segment.orient_eq_zero_of_mem ⟨_, _⟩ hk)
     · exact hq k hke hk
-  refine ⟨_, _, htE.2.2.2 ho, notOnB _ htE.2.2.1 ho.ne', notOnB _ htE'.2.2.1 ho'.ne, ?_⟩
+  refine ⟨_, _, htE.2.2.2.1 ho, htE'.2.2.2.2 ho', notOnB _ htE.2.2.1 ho.ne',
+    notOnB _ htE'.2.2.1 ho'.ne, ?_⟩
   rw [htE.1, htE'.1, htE.2.1 ho.ne', htE'.2.1 ho'.ne]
   simp [ho, not_lt.mpr ho'.le]
   ring
+
+/-- Next to the middle of a non-horizontal edge of a simple polygon there are
+points off the boundary on both sides, and the winding number on the left is
+one more than on the right. The left-hand points can be taken in any set `S`
+containing all left-hand points near the middle. -/
+theorem IsSimple.exists_sides (hP : P.IsSimple) (e : Fin P.n) {u w : Point2D}
+    (hu : P.vertex e = u) (hw : P.vertex (P.next e) = w) (hy : u.y ≠ w.y) {S : Set Point2D}
+    (hS : ∀ᶠ q in 𝓝 ((1 / 2 : ℝ) • u + (1 / 2 : ℝ) • w), 0 < orient u w q → q ∈ S) :
+    ∃ q q', q ∈ S ∧ ¬ P.OnBoundary q ∧ ¬ P.OnBoundary q' ∧
+      P.windingNumber q = P.windingNumber q' + 1 := by
+  obtain ⟨q, q', hq, -, h₁, h₂, h₃⟩ := hP.exists_sides₂ e hu hw hy (S' := univ) hS
+    (Eventually.of_forall fun _ _ => mem_univ _)
+  exact ⟨q, q', hq, h₁, h₂, h₃⟩
 
 /-! ## The ear triangle is inside -/
 
