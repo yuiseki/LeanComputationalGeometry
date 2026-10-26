@@ -33,7 +33,9 @@ the ear triangle (`IsEar.windingNumber_eq_one`), so
   (`IsEar.region_removeEar`);
 - the smaller polygon's open region misses the interior of the ear triangle,
   where its winding number is `1 - 1 = 0`
-  (`IsEar.disjoint_openRegion_removeEar`).
+  (`IsEar.disjoint_openRegion_removeEar`);
+- the smaller polygon again winds `0` or `1` times
+  (`IsEar.windsZeroOrOne_removeEar`), so ears can be cut one after another.
 -/
 
 namespace ComputationalGeometry
@@ -109,7 +111,8 @@ theorem IsEar.not_onBoundary_of_mem_interior (hP : P.IsSimple) (h4 : 4 ≤ P.n) 
         exact this
     rw [hyA] at hy
     have hxA : x = P.prevVertex i :=
-      (wbtw_swap_right_iff ℝ _).mp ⟨mem_segment_iff_wbtw.mp hj, (mem_segment_iff_wbtw.mp hy).symm⟩
+      (wbtw_swap_right_iff ℝ _).mp
+        ⟨mem_segment_iff_wbtw.mp hj, (mem_segment_iff_wbtw.mp hy).symm⟩
     have := hs.2.2
     rw [hxA] at this
     simp [earTriangle] at this
@@ -156,7 +159,8 @@ theorem IsSimple.not_mem_edge_of_mem_openSegment (hP : P.IsSimple) {e k : Fin P.
     {p : Point2D} (hp : p ∈ openSegment ℝ (P.vertex e) (P.vertex (P.next e))) :
     p ∉ segment ℝ (P.vertex k) (P.vertex (P.next k)) := by
   intro hpk
-  have hpe : p ∈ segment ℝ (P.vertex e) (P.vertex (P.next e)) := openSegment_subset_segment _ _ _ hp
+  have hpe : p ∈ segment ℝ (P.vertex e) (P.vertex (P.next e)) :=
+    openSegment_subset_segment _ _ _ hp
   have hne : P.vertex e ≠ P.vertex (P.next e) := hP.edge_nondegenerate e
   by_cases h₁ : k = P.next e
   · subst h₁
@@ -211,7 +215,8 @@ theorem IsSimple.exists_sides (hP : P.IsSimple) (e : Fin P.n) {u w : Point2D}
       rcases lt_or_gt_of_ne h₀ with hn | hn
       · simp [hn, not_lt.mpr hn.le]
       · simp [hn, not_lt.mpr hn.le]
-  have hedges : ∀ᶠ q in 𝓝 m, ∀ k, k ≠ e → q ∉ segment ℝ (P.vertex k) (P.vertex (P.next k)) := by
+  have hedges :
+      ∀ᶠ q in 𝓝 m, ∀ k, k ≠ e → q ∉ segment ℝ (P.vertex k) (P.vertex (P.next k)) := by
     refine eventually_all.mpr fun k => ?_
     by_cases hk : k = e
     · exact Eventually.of_forall fun q h => absurd hk h
@@ -350,6 +355,32 @@ theorem IsEar.disjoint_openRegion_removeEar (hP : P.IsSimple) (h4 : 4 ≤ P.n) {
   rw [hP1, hT1] at this
   exact hw (by omega)
 
+/-- The smaller polygon again winds `0` or `1` times: off the ear triangle its
+winding numbers are the polygon's, and on the ear triangle they are `0`, inside
+because `1 - 1 = 0` and on its sides by local constancy. So ears can be cut
+one after another. -/
+theorem IsEar.windsZeroOrOne_removeEar (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n}
+    (h : P.IsEar i) (hJ : P.WindsZeroOrOne) : (P.removeEar i).WindsZeroOrOne := by
+  intro p hpQ
+  have hdec := windingNumber_removeEar P (by omega) i
+  by_cases hpT : p ∈ (P.earTriangle i).toSet
+  · left
+    have hcl : p ∈ closure (interior (P.earTriangle i).toSet) := by
+      rw [Triangle.closure_interior h.isCCW]; exact hpT
+    obtain ⟨q, hqT, hq⟩ := ((mem_closure_iff_frequently.mp hcl).and_eventually
+      ((P.removeEar i).windingNumber_eventually_eq hpQ)).exists
+    have h₁ := hdec q
+    rw [h.windingNumber_eq_one hP h4 hJ hqT,
+      Triangle.winding3_eq_one h.isCCW ((Triangle.mem_interior_toSet_iff h.isCCW q).mp hqT)] at h₁
+    rw [← hq]
+    omega
+  · have hpP : ¬ P.OnBoundary p := fun hb =>
+      (onBoundary_removeEar_or (by omega) i hb).elim hpQ hpT
+    have h₁ := hdec p
+    rw [Triangle.winding3_eq_zero_of_not_mem h.isCCW hpT, add_zero] at h₁
+    rw [← h₁]
+    exact hJ p hpP
+
 end RawPolygon
 
 namespace SimplePolygon
@@ -364,6 +395,10 @@ theorem toRegion_eq_removeEar_union (P : SimplePolygon) (h4 : 4 ≤ P.1.n) (i : 
     (h : P.1.IsEar i) (hJ : P.1.WindsZeroOrOne) :
     P.toRegion = (P.removeEar h4 i h).toRegion ∪ (P.1.earTriangle i).toSet :=
   h.region_removeEar P.2 h4 hJ
+
+theorem windsZeroOrOne_removeEar (P : SimplePolygon) (h4 : 4 ≤ P.1.n) (i : Fin P.1.n)
+    (h : P.1.IsEar i) (hJ : P.1.WindsZeroOrOne) : (P.removeEar h4 i h).1.WindsZeroOrOne :=
+  h.windsZeroOrOne_removeEar P.2 h4 hJ
 
 theorem disjoint_toOpenRegion_removeEar (P : SimplePolygon) (h4 : 4 ≤ P.1.n) (i : Fin P.1.n)
     (h : P.1.IsEar i) (hJ : P.1.WindsZeroOrOne) :

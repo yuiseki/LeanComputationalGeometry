@@ -454,6 +454,22 @@ theorem region_dropLast (hconv : (◇v).ConvexVertex (Fin.last (l + 1)))
         exact hw
     · exact hin hp
 
+/-- A point on the boundary is on the smaller ring's boundary or in the ear
+triangle. -/
+theorem onBoundary_dropLast_or {p : Point2D} (hp : (◇v).OnBoundary p) :
+    (◇(v ∘ Fin.castSucc)).OnBoundary p ∨
+      p ∈ ((◇v).earTriangle (Fin.last (l + 1))).toSet := by
+  obtain ⟨j, hj⟩ := hp
+  rcases index_cases v j with rfl | rfl | ⟨k, hk, rfl⟩
+  · exact Or.inr (Triangle.segment_subset_toSet (u := (◇v).vertex (Fin.last (l + 1)))
+      (v := (◇v).nextVertex (Fin.last (l + 1))) (by simp [earTriangle])
+      (by simp [earTriangle]) hj)
+  · rw [edge_toSet, next_prev] at hj
+    exact Or.inr (Triangle.segment_subset_toSet (u := (◇v).prevVertex (Fin.last (l + 1)))
+      (v := (◇v).vertex (Fin.last (l + 1))) (by simp [earTriangle])
+      (by simp [earTriangle]) hj)
+  · exact Or.inl ⟨k, by rw [dropLast_edge_of_ne_last v hk]; exact hj⟩
+
 end DropLastSimple
 
 /-! ## The general statements -/
@@ -486,6 +502,16 @@ theorem region_removeEar {P : RawPolygon} (h2 : 2 ≤ P.n) {i : Fin P.n} (hconv 
     exact hconv
   · rw [earTriangle_shiftLast, (shiftLastRelabel v i).region_eq]
     exact hin
+
+/-- A point on the boundary is on the smaller ring's boundary or in the ear
+triangle. -/
+theorem onBoundary_removeEar_or {P : RawPolygon} (h2 : 2 ≤ P.n) (i : Fin P.n) {p : Point2D}
+    (hp : P.OnBoundary p) : (P.removeEar i).OnBoundary p ∨ p ∈ (P.earTriangle i).toSet := by
+  obtain ⟨_ | _ | l, v⟩ := P
+  · exact i.elim0
+  · exact absurd h2 (by norm_num)
+  rw [removeEar_mk, ← earTriangle_shiftLast v i]
+  exact onBoundary_dropLast_or _ (((shiftLastRelabel v i).onBoundary_iff p).mpr hp)
 
 end RawPolygon
 

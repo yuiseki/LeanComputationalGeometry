@@ -281,6 +281,13 @@ theorem mem_region_toPolygon_iff_of_isCCW (h : T.IsCCW) : p ∈ T.toPolygon.regi
       · exact lt_of_le_of_ne hc.2.1 fun e => hb ⟨hc, Or.inr (Or.inl e.symm)⟩
       · exact lt_of_le_of_ne hc.2.2 fun e => hb ⟨hc, Or.inr (Or.inr e.symm)⟩
 
+/-- Outside a counterclockwise triangle the winding number is `0`. -/
+theorem winding3_eq_zero_of_not_mem (h : T.IsCCW) (hp : p ∉ T.toSet) : T.winding3 p = 0 := by
+  rw [← mem_region_toPolygon_iff_of_isCCW h] at hp
+  rw [← windingNumber_toPolygon]
+  by_contra hne
+  exact hp (Or.inr hne)
+
 theorem mem_openRegion_toPolygon_iff_of_isCCW (h : T.IsCCW) :
     p ∈ T.toPolygon.openRegion ↔ p ∈ interior T.toSet := by
   rw [mem_interior_toSet_iff h]

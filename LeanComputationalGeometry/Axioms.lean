@@ -2,6 +2,7 @@ import LeanComputationalGeometry
 import LeanComputationalGeometry.Examples.Basic
 import LeanComputationalGeometry.Examples.Polygons
 import LeanComputationalGeometry.Examples.Ears
+import LeanComputationalGeometry.Examples.EarRegion
 
 /-!
 # Axiom audit
@@ -335,3 +336,151 @@ builds it.
 /-- info: 'ComputationalGeometry.Examples.ell_removeEar_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.Examples.ell_removeEar_isSimple
+
+/-- info: 'ComputationalGeometry.mem_segment_of_orient_eq_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.mem_segment_of_orient_eq_zero
+
+/-- info: 'ComputationalGeometry.edgeContribution_eventually_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.edgeContribution_eventually_eq
+
+/-- info: 'ComputationalGeometry.RawPolygon.sum_sub_next_mul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sum_sub_next_mul
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_eventually_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_eventually_eq
+
+/-- info: 'ComputationalGeometry.RawPolygon.continuousAt_windingNumber' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.continuousAt_windingNumber
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_eq_of_isPreconnected' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_eq_of_isPreconnected
+
+/-- info: 'ComputationalGeometry.RawPolygon.isClosed_onBoundary' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.isClosed_onBoundary
+
+/-- info: 'ComputationalGeometry.RawPolygon.isOpen_openRegion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.isOpen_openRegion
+
+/-- info: 'ComputationalGeometry.RawPolygon.isClosed_region' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.isClosed_region
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_eventually_eq_add_edge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_eventually_eq_add_edge
+
+/-- info: 'ComputationalGeometry.SimplePolygon.isOpen_toOpenRegion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.isOpen_toOpenRegion
+
+/-- info: 'ComputationalGeometry.Triangle.winding3_eq_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.winding3_eq_one
+
+/-- info: 'ComputationalGeometry.Triangle.isPreconnected_interior' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.isPreconnected_interior
+
+/-- info: 'ComputationalGeometry.Triangle.closure_interior' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.closure_interior
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.disjoint_edge_earTriangle' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.disjoint_edge_earTriangle
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.not_onBoundary_of_mem_interior' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.not_onBoundary_of_mem_interior
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.not_mem_edge_of_mem_openSegment' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.not_mem_edge_of_mem_openSegment
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_sides' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_sides
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.exists_sides' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.exists_sides
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.windingNumber_eq_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.windingNumber_eq_one
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.interior_earTriangle_subset_openRegion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.interior_earTriangle_subset_openRegion
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.earTriangle_subset_region' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.earTriangle_subset_region
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.earDiagonal_subset_region' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.earDiagonal_subset_region
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.region_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.region_removeEar
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.disjoint_openRegion_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.disjoint_openRegion_removeEar
+
+/-- info: 'ComputationalGeometry.SimplePolygon.toRegion_eq_removeEar_union' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.toRegion_eq_removeEar_union
+
+/-- info: 'ComputationalGeometry.SimplePolygon.disjoint_toOpenRegion_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.disjoint_toOpenRegion_removeEar
+
+/-- info: 'ComputationalGeometry.Examples.square_windsZeroOrOne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_windsZeroOrOne
+
+/-- info: 'ComputationalGeometry.Examples.ell_windsZeroOrOne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ell_windsZeroOrOne
+
+/-- info: 'ComputationalGeometry.Examples.ellCW_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ellCW_isSimple
+
+/-- info: 'ComputationalGeometry.Examples.ellCW_isEar_two' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ellCW_isEar_two
+
+/-- info: 'ComputationalGeometry.Examples.ellCW_earTriangle_not_subset_region' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ellCW_earTriangle_not_subset_region
+
+/-- info: 'ComputationalGeometry.Examples.ellCW_not_windsZeroOrOne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ellCW_not_windsZeroOrOne
+
+/-- info: 'ComputationalGeometry.RawPolygon.onBoundary_removeEar_or' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.onBoundary_removeEar_or
+
+/-- info: 'ComputationalGeometry.Triangle.winding3_eq_zero_of_not_mem' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.winding3_eq_zero_of_not_mem
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.windsZeroOrOne_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.windsZeroOrOne_removeEar
+
+/-- info: 'ComputationalGeometry.SimplePolygon.windsZeroOrOne_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.windsZeroOrOne_removeEar

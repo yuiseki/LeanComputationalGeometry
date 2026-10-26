@@ -133,7 +133,8 @@ end Eventually
 /-- Near a point `p` off the edge from `a` to `b`, the edge's contribution at
 `q` is `atOrBelow q a - atOrBelow q b` times `crossRight p a b`. -/
 theorem edgeContribution_eventually_eq {p a b : Point2D} (h : p ∉ segment ℝ a b) :
-    ∀ᶠ q in 𝓝 p, edgeContribution q a b = (atOrBelow q a - atOrBelow q b) * crossRight p a b := by
+    ∀ᶠ q in 𝓝 p,
+      edgeContribution q a b = (atOrBelow q a - atOrBelow q b) * crossRight p a b := by
   have hpa := ne_of_not_mem_segment_left h
   have hpb := ne_of_not_mem_segment_right h
   rcases lt_trichotomy a.y p.y with ha | ha | ha <;>
@@ -166,12 +167,15 @@ theorem edgeContribution_eventually_eq {p a b : Point2D} (h : p ∉ segment ℝ 
     have hcr : crossRight p a b = if 0 < orient a b p then 1 else 0 := by
       simp [crossRight, ha.ne, hb.ne', ha.trans hb]
     have ho : orient a b p ≠ 0 := fun h0 =>
-      h (mem_segment_of_orient_eq_zero h0 (ha.trans hb).ne (Set.mem_uIcc.mpr (Or.inl ⟨ha.le, hb.le⟩)))
+      h (mem_segment_of_orient_eq_zero h0 (ha.trans hb).ne
+        (Set.mem_uIcc.mpr (Or.inl ⟨ha.le, hb.le⟩)))
     rcases lt_or_gt_of_ne ho with ho' | ho'
-    · filter_upwards [eventually_y_gt ha, eventually_y_lt hb, eventually_orient_neg ho'] with q h₁ h₂ h₃
+    · filter_upwards [eventually_y_gt ha, eventually_y_lt hb, eventually_orient_neg ho']
+        with q h₁ h₂ h₃
       rw [edgeContribution_of_up h₁.le h₂, atOrBelow_of_le h₁.le, atOrBelow_of_lt h₂, hcr]
       simp [not_lt.mpr ho'.le, not_lt.mpr h₃.le]
-    · filter_upwards [eventually_y_gt ha, eventually_y_lt hb, eventually_orient_pos ho'] with q h₁ h₂ h₃
+    · filter_upwards [eventually_y_gt ha, eventually_y_lt hb, eventually_orient_pos ho']
+        with q h₁ h₂ h₃
       rw [edgeContribution_of_up h₁.le h₂, atOrBelow_of_le h₁.le, atOrBelow_of_lt h₂, hcr]
       simp [ho', h₃]
   · -- `a` at the height of `p`, `b` below
@@ -221,12 +225,15 @@ theorem edgeContribution_eventually_eq {p a b : Point2D} (h : p ∉ segment ℝ 
     have hcr : crossRight p a b = if orient a b p < 0 then 1 else 0 := by
       simp [crossRight, ha.ne', hb.ne, not_lt.mpr (hb.trans ha).le]
     have ho : orient a b p ≠ 0 := fun h0 =>
-      h (mem_segment_of_orient_eq_zero h0 (hb.trans ha).ne' (Set.mem_uIcc.mpr (Or.inr ⟨hb.le, ha.le⟩)))
+      h (mem_segment_of_orient_eq_zero h0 (hb.trans ha).ne'
+        (Set.mem_uIcc.mpr (Or.inr ⟨hb.le, ha.le⟩)))
     rcases lt_or_gt_of_ne ho with ho' | ho'
-    · filter_upwards [eventually_y_lt ha, eventually_y_gt hb, eventually_orient_neg ho'] with q h₁ h₂ h₃
+    · filter_upwards [eventually_y_lt ha, eventually_y_gt hb, eventually_orient_neg ho']
+        with q h₁ h₂ h₃
       rw [edgeContribution_of_down h₁ h₂.le, atOrBelow_of_lt h₁, atOrBelow_of_le h₂.le, hcr]
       simp [ho', h₃]
-    · filter_upwards [eventually_y_lt ha, eventually_y_gt hb, eventually_orient_pos ho'] with q h₁ h₂ h₃
+    · filter_upwards [eventually_y_lt ha, eventually_y_gt hb, eventually_orient_pos ho']
+        with q h₁ h₂ h₃
       rw [edgeContribution_of_down h₁ h₂.le, atOrBelow_of_lt h₁, atOrBelow_of_le h₂.le, hcr]
       simp [not_lt.mpr ho'.le, not_lt.mpr h₃.le]
   · -- `a` above, `b` at the height of `p`
