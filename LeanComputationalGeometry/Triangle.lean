@@ -1,6 +1,7 @@
 import LeanComputationalGeometry.Segment
 import Mathlib.Analysis.Convex.Hull
 import Mathlib.Analysis.Convex.Combination
+import Mathlib.Topology.Algebra.Order.Field
 
 /-!
 # Triangles
@@ -15,7 +16,14 @@ the vertices (`nondegenerate_iff_affineIndependent`).
 The closed triangle is Mathlib's convex hull of the vertices (`toSet`). For a
 counterclockwise triangle, a point is in it exactly when it lies on the left
 of, or on, each of the three edges, read as orientations
-(`mem_toSet_iff_containsTest`). The proof goes through barycentric
+(`mem_toSet_iff_containsTest`). Its topological interior and frontier, in
+Mathlib's sense, are read the same way:
+
+- strictly inside: `p ∈ interior T.toSet` exactly when every edge has
+  `orient > 0` (`mem_interior_toSet_iff`);
+- on the boundary: `p ∈ frontier T.toSet` exactly when `p` is in the triangle
+  and some edge has `orient = 0` (`mem_frontier_toSet_iff`), which is being on
+  one of the three edge segments (`mem_frontier_toSet_iff_edges`). The proof goes through barycentric
 coordinates: the orientations against the three edges sum to the triangle's
 (`orient_sum`) and weight the vertices to give the point (`orient_smul_sum`).
 -/
@@ -158,6 +166,180 @@ theorem mem_toSet_iff_containsTest (h : T.IsCCW) (p : Point2D) :
 theorem mem_toSet_of_strictContainsTest (h : T.IsCCW) {p : Point2D}
     (hp : T.StrictContainsTest p) : p ∈ T.toSet :=
   (mem_toSet_iff_containsTest h p).mpr ⟨hp.1.le, hp.2.1.le, hp.2.2.le⟩
+
+/-! ## Edges, interior and frontier -/
+
+/-- The same triangle, starting from the second vertex. -/
+def rotate (T : Triangle) : Triangle := ⟨T.b, T.c, T.a⟩
+
+@[simp] theorem rotate_a (T : Triangle) : T.rotate.a = T.b := rfl
+@[simp] theorem rotate_b (T : Triangle) : T.rotate.b = T.c := rfl
+@[simp] theorem rotate_c (T : Triangle) : T.rotate.c = T.a := rfl
+
+theorem toSet_rotate (T : Triangle) : T.rotate.toSet = T.toSet := by
+  unfold toSet
+  congr 1
+  ext; simp only [rotate_a, rotate_b, rotate_c, mem_insert_iff, mem_singleton_iff]; tauto
+
+theorem signedArea2_rotate (T : Triangle) : T.rotate.signedArea2 = T.signedArea2 :=
+  orient_rotate _ _ _
+
+theorem isCCW_rotate {T : Triangle} : T.rotate.IsCCW ↔ T.IsCCW := by
+  rw [IsCCW, IsCCW, signedArea2_rotate]
+
+theorem containsTest_rotate {T : Triangle} {p : Point2D} :
+    T.rotate.ContainsTest p ↔ T.ContainsTest p := by
+  simp only [ContainsTest, rotate_a, rotate_b, rotate_c]; tauto
+
+theorem strictContainsTest_rotate {T : Triangle} {p : Point2D} :
+    T.rotate.StrictContainsTest p ↔ T.StrictContainsTest p := by
+  simp only [StrictContainsTest, rotate_a, rotate_b, rotate_c]; tauto
+
+/-- For a counterclockwise triangle, a point is on the edge from `a` to `b`
+exactly when it is on that edge's line and on the inner side of the other
+two. -/
+theorem mem_segment_iff_of_isCCW (h : T.IsCCW) (p : Point2D) :
+    p ∈ segment ℝ T.a T.b ↔ orient T.a T.b p = 0 ∧ 0 ≤ orient T.b T.c p ∧ 0 ≤ orient T.c T.a p := by
+  have hA : 0 < orient T.a T.b T.c := h
+  constructor
+  · intro hp
+    obtain ⟨t, ht, rfl⟩ := Segment.mem_toSet_iff_exists ⟨T.a, T.b⟩ |>.mp hp
+    refine ⟨Segment.orient_eq_zero_of_mem ⟨T.a, T.b⟩ hp, ?_, ?_⟩
+    · dsimp only
+      rw [orient_lineMap, orient_self₁₃, orient_rotate]
+      nlinarith [ht.2]
+    · dsimp only
+      rw [orient_lineMap, orient_self₂₃]
+      have : orient T.c T.a T.b = orient T.a T.b T.c := by rw [orient_rotate, orient_rotate]
+      rw [this]
+      nlinarith [ht.1]
+  · rintro ⟨h₀, h₁, h₂⟩
+    have hA' : T.signedArea2 ≠ 0 := hA.ne'
+    have key := T.orient_smul_sum p
+    have hsum := T.orient_sum p
+    rw [h₀, zero_smul, add_zero] at key
+    rw [h₀, add_zero] at hsum
+    refine ⟨orient T.b T.c p / T.signedArea2, orient T.c T.a p / T.signedArea2,
+      div_nonneg h₁ hA.le, div_nonneg h₂ hA.le, ?_, ?_⟩
+    · rw [← add_div, hsum, div_self hA']
+    · apply smul_right_injective _ hA'
+      simp only [smul_add, smul_smul]
+      rw [mul_div_cancel₀ _ hA', mul_div_cancel₀ _ hA']
+      exact key
+
+/-- The closed triangle is the set its test describes. -/
+theorem toSet_eq_containsTest (h : T.IsCCW) : T.toSet = {p | T.ContainsTest p} :=
+  Set.ext fun p => mem_toSet_iff_containsTest h p
+
+theorem isClosed_toSet (h : T.IsCCW) : IsClosed T.toSet := by
+  rw [toSet_eq_containsTest h]
+  exact ((isClosed_le continuous_const (continuous_orient _ _)).inter
+    ((isClosed_le continuous_const (continuous_orient _ _)).inter
+      (isClosed_le continuous_const (continuous_orient _ _))))
+
+/-- A point in the interior of a set lying on the left of a line, or on it, is
+strictly on the left. -/
+theorem pos_of_mem_interior {a b p : Point2D} (hab : a ≠ b) {S : Set Point2D}
+    (hS : S ⊆ {q | 0 ≤ orient a b q}) (hp : p ∈ interior S) : 0 < orient a b p := by
+  have h0 : 0 ≤ orient a b p := hS (interior_subset hp)
+  rcases h0.lt_or_eq with hpos | hzero
+  · exact hpos
+  exfalso
+  obtain ⟨ε, hε, hball⟩ := Metric.mem_nhds_iff.mp (mem_interior_iff_mem_nhds.mp hp)
+  set u := b - a
+  set w : Point2D := Point2D.mk (-u.y) u.x
+  have hu : u ≠ 0 := sub_ne_zero.mpr hab.symm
+  have hcw : 0 < cross u w := by
+    have : u.x ≠ 0 ∨ u.y ≠ 0 := by
+      by_contra hc
+      simp only [not_or, not_not] at hc
+      exact hu (Point2D.ext (by simp [hc.1]) (by simp [hc.2]))
+    simp only [cross, w, x_mk, y_mk]
+    rcases this with h | h
+    · have := sq_pos_of_ne_zero h; nlinarith [sq_nonneg u.y]
+    · have := sq_pos_of_ne_zero h; nlinarith [sq_nonneg u.x]
+  set t := ε / (2 * (‖w‖ + 1))
+  have ht : 0 < t := by positivity
+  have hq : p + (-t) • w ∈ Metric.ball p ε := by
+    rw [Metric.mem_ball, dist_eq_norm, add_sub_cancel_left, norm_smul, norm_neg,
+      Real.norm_of_nonneg ht.le]
+    have : t * ‖w‖ < ε := by
+      have h1 : t * ‖w‖ ≤ t * (‖w‖ + 1) := by nlinarith [norm_nonneg w]
+      have h2 : t * (‖w‖ + 1) = ε / 2 := by
+        simp only [t]; field_simp
+      linarith
+    exact this
+  have := hS (hball hq)
+  simp only [mem_ofPred_eq, orient_add, ← hzero, cross_smul_right] at this
+  nlinarith
+
+/-- For a counterclockwise triangle, a point is in its topological interior
+exactly when it is strictly on the left of every edge. -/
+theorem mem_interior_toSet_iff (h : T.IsCCW) (p : Point2D) :
+    p ∈ interior T.toSet ↔ T.StrictContainsTest p := by
+  have hA : 0 < orient T.a T.b T.c := h
+  have hne : ∀ {u v w : Point2D}, 0 < orient u v w → u ≠ v := by
+    rintro u v w huvw rfl; simp at huvw
+  have sub : T.toSet ⊆ {q | T.ContainsTest q} := (toSet_eq_containsTest h).le
+  constructor
+  · intro hp
+    refine ⟨pos_of_mem_interior (hne hA) (fun q hq => (sub hq).1) hp,
+      pos_of_mem_interior (hne (show 0 < orient T.b T.c T.a by rwa [orient_rotate]))
+        (fun q hq => (sub hq).2.1) hp,
+      pos_of_mem_interior (hne (show 0 < orient T.c T.a T.b by rwa [orient_rotate, orient_rotate]))
+        (fun q hq => (sub hq).2.2) hp⟩
+  · intro hp
+    have hmem : p ∈ {q | 0 < orient T.a T.b q} ∩
+        ({q | 0 < orient T.b T.c q} ∩ {q | 0 < orient T.c T.a q}) := ⟨hp.1, hp.2.1, hp.2.2⟩
+    refine interior_maximal ?_ ?_ hmem
+    · intro q hq
+      exact (mem_toSet_iff_containsTest h q).mpr ⟨hq.1.le, hq.2.1.le, hq.2.2.le⟩
+    · exact (isOpen_lt continuous_const (continuous_orient _ _)).inter
+        ((isOpen_lt continuous_const (continuous_orient _ _)).inter
+          (isOpen_lt continuous_const (continuous_orient _ _)))
+
+/-- For a counterclockwise triangle, a point is on its frontier exactly when
+it is in the triangle and on the line of some edge. -/
+theorem mem_frontier_toSet_iff (h : T.IsCCW) (p : Point2D) :
+    p ∈ frontier T.toSet ↔
+      T.ContainsTest p ∧ (orient T.a T.b p = 0 ∨ orient T.b T.c p = 0 ∨ orient T.c T.a p = 0) := by
+  rw [frontier, (isClosed_toSet h).closure_eq, mem_sdiff, mem_interior_toSet_iff h,
+    mem_toSet_iff_containsTest h]
+  constructor
+  · rintro ⟨hc, hs⟩
+    refine ⟨hc, ?_⟩
+    by_contra hz
+    simp only [not_or] at hz
+    exact hs ⟨lt_of_le_of_ne hc.1 (Ne.symm hz.1), lt_of_le_of_ne hc.2.1 (Ne.symm hz.2.1),
+      lt_of_le_of_ne hc.2.2 (Ne.symm hz.2.2)⟩
+  · rintro ⟨hc, hz⟩
+    refine ⟨hc, fun hs => ?_⟩
+    rcases hz with hz | hz | hz
+    · exact hs.1.ne' hz
+    · exact hs.2.1.ne' hz
+    · exact hs.2.2.ne' hz
+
+/-- For a counterclockwise triangle, the frontier is the three edges. -/
+theorem mem_frontier_toSet_iff_edges (h : T.IsCCW) (p : Point2D) :
+    p ∈ frontier T.toSet ↔
+      p ∈ segment ℝ T.a T.b ∨ p ∈ segment ℝ T.b T.c ∨ p ∈ segment ℝ T.c T.a := by
+  have h' : T.rotate.IsCCW := isCCW_rotate.mpr h
+  have h'' : T.rotate.rotate.IsCCW := isCCW_rotate.mpr h'
+  rw [mem_frontier_toSet_iff h, mem_segment_iff_of_isCCW h,
+    show segment ℝ T.b T.c = segment ℝ T.rotate.a T.rotate.b from rfl,
+    mem_segment_iff_of_isCCW h',
+    show segment ℝ T.c T.a = segment ℝ T.rotate.rotate.a T.rotate.rotate.b from rfl,
+    mem_segment_iff_of_isCCW h'']
+  simp only [rotate_a, rotate_b, rotate_c, ContainsTest]
+  constructor
+  · rintro ⟨⟨h₁, h₂, h₃⟩, hz | hz | hz⟩
+    · exact Or.inl ⟨hz, h₂, h₃⟩
+    · exact Or.inr (Or.inl ⟨hz, h₃, h₁⟩)
+    · exact Or.inr (Or.inr ⟨hz, h₁, h₂⟩)
+  · rintro (⟨hz, h₂, h₃⟩ | ⟨hz, h₃, h₁⟩ | ⟨hz, h₁, h₂⟩)
+    · exact ⟨⟨hz.ge, h₂, h₃⟩, Or.inl hz⟩
+    · exact ⟨⟨h₁, hz.ge, h₃⟩, Or.inr (Or.inl hz)⟩
+    · exact ⟨⟨h₁, h₂, hz.ge⟩, Or.inr (Or.inr hz)⟩
 
 /-- Two edges of a nondegenerate triangle meet only at their shared vertex. -/
 theorem segment_inter_segment_eq {a b c : Point2D} (h : orient a b c ≠ 0) :

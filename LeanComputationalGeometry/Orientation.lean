@@ -133,6 +133,16 @@ theorem orient_lineMap₁ (p q b c : Point2D) (t : ℝ) :
     orient ((1 - t) • p + t • q) b c = (1 - t) * orient p b c + t * orient q b c := by
   simp only [orient_def, x_add, y_add, x_smul, y_smul]; ring
 
+/-- The orientation is continuous in the last point. -/
+@[fun_prop] theorem continuous_orient (a b : Point2D) : Continuous fun p => orient a b p := by
+  simp only [orient_def]
+  fun_prop
+
+/-- Moving `p` by `w` changes the orientation by `cross (b - a) w`. -/
+theorem orient_add (a b p w : Point2D) : orient a b (p + w) = orient a b p + cross (b - a) w := by
+  simp only [orient_def, cross, x_add, y_add, x_sub, y_sub]
+  ring
+
 /-! ## Collinearity -/
 
 /-- If the cross product of `u ≠ 0` with `w` vanishes, `w` is a multiple of

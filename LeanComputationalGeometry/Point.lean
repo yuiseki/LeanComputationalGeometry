@@ -58,6 +58,10 @@ theorem ext_iff' {p q : Point2D} : p = q ↔ p.x = q.x ∧ p.y = q.y :=
 
 @[simp] theorem mk_x_y (p : Point2D) : mk p.x p.y = p := ext rfl rfl
 
+@[fun_prop] theorem continuous_x : Continuous Point2D.x := PiLp.continuous_apply 2 _ 0
+
+@[fun_prop] theorem continuous_y : Continuous Point2D.y := PiLp.continuous_apply 2 _ 1
+
 end Point2D
 
 end ComputationalGeometry
