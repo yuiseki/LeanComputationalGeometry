@@ -240,6 +240,307 @@ theorem IsSimple.dot_pos_of_locallyDegenerate (hP : P.IsSimple) {i : Fin P.n}
     simp only [x_smul, y_smul]
     nlinarith
 
+/-! ## Small regions beside the boundary
+
+Beside each edge, on its left, a thin open triangle with the edge as its base
+(`thinLeft`); around each vertex, on the left of the two edges there, a small
+sector (`leftSector`). Both avoid the boundary when small enough, both are
+preconnected, and each thin triangle meets the sectors at both its ends. -/
+
+/-- The dot product of two vectors of the plane. -/
+def dot (u w : Point2D) : ℝ := u.x * w.x + u.y * w.y
+
+theorem dist_le_abs_add_abs (q z : Point2D) : dist q z ≤ |q.x - z.x| + |q.y - z.y| := by
+  rw [EuclideanSpace.dist_eq, Fin.sum_univ_two, Real.dist_eq, Real.dist_eq]
+  rw [Real.sqrt_le_left]
+  · show (|q.x - z.x|) ^ 2 + (|q.y - z.y|) ^ 2 ≤ (|q.x - z.x| + |q.y - z.y|) ^ 2
+    nlinarith [abs_nonneg (q.x - z.x), abs_nonneg (q.y - z.y)]
+  · positivity
+
+theorem convex_orient_pos (a b : Point2D) : Convex ℝ {q | 0 < orient a b q} := by
+  intro x hx y hy α β hα hβ hαβ
+  obtain rfl : α = 1 - β := by linarith
+  simp only [mem_ofPred_eq, orient_lineMap] at hx hy ⊢
+  rcases eq_or_lt_of_le hβ with h | h
+  · subst h; simpa using hx
+  · nlinarith [mul_nonneg hα hx.le]
+
+open Classical in
+/-- The points near vertex `i` on the left of the boundary there: within `r`
+of the vertex, and on the left of both edges at a convex or straight vertex,
+of either at a reflex one. -/
+noncomputable def leftSector (P : RawPolygon) (i : Fin P.n) (r : ℝ) : Set Point2D :=
+  {q | dist q (P.vertex i) < r ∧
+    if 0 ≤ orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) then
+      0 < orient (P.prevVertex i) (P.vertex i) q ∧ 0 < orient (P.vertex i) (P.nextVertex i) q
+    else 0 < orient (P.prevVertex i) (P.vertex i) q ∨ 0 < orient (P.vertex i) (P.nextVertex i) q}
+
+/-- The thin open triangle on the left of edge `e`, of height `h` over the
+middle of the edge. -/
+def thinLeft (P : RawPolygon) (e : Fin P.n) (h : ℝ) : Set Point2D :=
+  {q | 0 < orient (P.vertex e) (P.vertex (P.next e)) q ∧
+    orient (P.vertex e) (P.vertex (P.next e)) q <
+      2 * h * dot (q - P.vertex e) (P.vertex (P.next e) - P.vertex e) ∧
+    orient (P.vertex e) (P.vertex (P.next e)) q <
+      2 * h * (dot (P.vertex (P.next e) - P.vertex e) (P.vertex (P.next e) - P.vertex e) -
+        dot (q - P.vertex e) (P.vertex (P.next e) - P.vertex e))}
+
+theorem convex_thinLeft (e : Fin P.n) (h : ℝ) : Convex ℝ (P.thinLeft e h) := by
+  intro x hx y hy α β hα hβ hαβ
+  obtain rfl : α = 1 - β := by linarith
+  simp only [thinLeft, mem_ofPred_eq, orient_lineMap, dot, x_sub, y_sub, x_add, y_add,
+    x_smul, y_smul] at hx hy ⊢
+  obtain ⟨hx₁, hx₂, hx₃⟩ := hx
+  obtain ⟨hy₁, hy₂, hy₃⟩ := hy
+  rcases eq_or_lt_of_le hβ with hb | hb
+  · subst hb
+    simp only [sub_zero, one_mul, zero_mul, add_zero]
+    exact ⟨hx₁, by nlinarith, by nlinarith⟩
+  refine ⟨by nlinarith [mul_nonneg hα hx₁.le],
+    by nlinarith [mul_nonneg hα (sub_nonneg.mpr hx₂.le)],
+    by nlinarith [mul_nonneg hα (sub_nonneg.mpr hx₃.le)]⟩
+
+theorem isPreconnected_thinLeft (e : Fin P.n) (h : ℝ) : IsPreconnected (P.thinLeft e h) :=
+  (convex_thinLeft e h).isPreconnected
+
+/-- Small sectors at a vertex of a simple polygon avoid the boundary. -/
+theorem IsSimple.eventually_leftSector_not_onBoundary (hP : P.IsSimple) (i : Fin P.n) :
+    ∀ᶠ r in 𝓝[>] (0 : ℝ), ∀ q ∈ P.leftSector i r, ¬ P.OnBoundary q := by
+  classical
+  have hfar : ∀ᶠ q in 𝓝 (P.vertex i), ∀ j, j ≠ i → j ≠ P.prev i →
+      q ∉ segment ℝ (P.vertex j) (P.vertex (P.next j)) := by
+    refine eventually_all.mpr fun j => ?_
+    by_cases hj : j ≠ i ∧ j ≠ P.prev i
+    · have hv : P.vertex i ∉ segment ℝ (P.vertex j) (P.vertex (P.next j)) := by
+        intro hm
+        rcases hP.vertex_mem_edge (j := j) (k := i) hm with e | e
+        · exact hj.1 e
+        · exact hj.2 (by rw [← e, prev_next])
+      exact Filter.mem_of_superset ((isClosed_segment _ _).isOpen_compl.mem_nhds hv)
+        fun q hq _ _ => hq
+    · exact Eventually.of_forall fun q h₁ h₂ => absurd ⟨h₁, h₂⟩ hj
+  obtain ⟨ε, hε, hball⟩ := Metric.eventually_nhds_iff.mp hfar
+  filter_upwards [Ioo_mem_nhdsGT hε] with r hr q hq ⟨j, hj⟩
+  rw [edge_toSet] at hj
+  obtain ⟨hqd, hqs⟩ := hq
+  by_cases e₁ : j = i
+  · -- On the outgoing edge: on its line, and on the inner side of the incoming one only at
+    -- a convex vertex.
+    subst e₁
+    obtain ⟨t, ht, hqt⟩ := (Segment.mem_toSet_iff_exists ⟨_, _⟩).mp hj
+    have hq' : q = (1 - t) • P.vertex j + t • P.nextVertex j := hqt.symm
+    have hu : orient (P.prevVertex j) (P.vertex j) q =
+        t * orient (P.prevVertex j) (P.vertex j) (P.nextVertex j) := by
+      rw [hq', orient_lineMap, orient_self₂₃]; ring
+    have hb : orient (P.vertex j) (P.nextVertex j) q = 0 := by
+      rw [hq', orient_lineMap, orient_self₁₃, orient_self₂₃]; ring
+    split_ifs at hqs with hc
+    · exact lt_irrefl 0 (hb ▸ hqs.2)
+    · rcases hqs with h | h
+      · rw [hu] at h
+        nlinarith [ht.1]
+      · exact lt_irrefl 0 (hb ▸ h)
+  by_cases e₂ : j = P.prev i
+  · -- On the incoming edge, symmetrically.
+    subst e₂
+    rw [next_prev] at hj
+    obtain ⟨t, ht, hqt⟩ := (Segment.mem_toSet_iff_exists ⟨_, _⟩).mp hj
+    have hq' : q = (1 - t) • P.prevVertex i + t • P.vertex i := hqt.symm
+    have hu : orient (P.prevVertex i) (P.vertex i) q = 0 := by
+      rw [hq', orient_lineMap, orient_self₁₃, orient_self₂₃]; ring
+    have hb : orient (P.vertex i) (P.nextVertex i) q =
+        (1 - t) * orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) := by
+      rw [hq', orient_lineMap, orient_self₁₃, orient_rotate]; ring
+    split_ifs at hqs with hc
+    · exact lt_irrefl 0 (hu ▸ hqs.1)
+    · rcases hqs with h | h
+      · exact lt_irrefl 0 (hu ▸ h)
+      · rw [hb] at h
+        nlinarith [ht.2]
+  exact hball (hqd.trans hr.2) j e₁ e₂ hj
+
+theorem isPreconnected_leftSector (i : Fin P.n) {r : ℝ} (hr : 0 < r) :
+    IsPreconnected (P.leftSector i r) := by
+  classical
+  by_cases hc : 0 ≤ orient (P.prevVertex i) (P.vertex i) (P.nextVertex i)
+  · have : P.leftSector i r = Metric.ball (P.vertex i) r ∩
+        {q | 0 < orient (P.prevVertex i) (P.vertex i) q} ∩
+        {q | 0 < orient (P.vertex i) (P.nextVertex i) q} := by
+      ext q; simp [leftSector, hc, Metric.mem_ball, and_assoc]
+    rw [this]
+    exact (((convex_ball _ _).inter (convex_orient_pos _ _)).inter
+      (convex_orient_pos _ _)).isPreconnected
+  · have : P.leftSector i r = (Metric.ball (P.vertex i) r ∩
+        {q | 0 < orient (P.prevVertex i) (P.vertex i) q}) ∪ (Metric.ball (P.vertex i) r ∩
+        {q | 0 < orient (P.vertex i) (P.nextVertex i) q}) := by
+      ext q; simp [leftSector, hc, Metric.mem_ball, and_or_left]
+    rw [this]
+    -- A common point: off the vertex towards both inner sides.
+    set w := (P.vertex i - P.prevVertex i) - (P.nextVertex i - P.vertex i)
+    set ε := r / (|w.x| + |w.y| + 1)
+    have hε : 0 < ε := div_pos hr (by positivity)
+    set z := P.vertex i + ε • w
+    have hzd : dist z (P.vertex i) < r := by
+      calc dist z (P.vertex i) ≤ |z.x - (P.vertex i).x| + |z.y - (P.vertex i).y| :=
+            dist_le_abs_add_abs _ _
+        _ = ε * (|w.x| + |w.y|) := by
+            simp only [z, x_add, y_add, x_smul, y_smul, add_sub_cancel_left, abs_mul,
+              abs_of_pos hε]; ring
+        _ < r := by
+            rw [show r = ε * (|w.x| + |w.y| + 1) by simp only [ε]; field_simp]
+            nlinarith
+    have hO : orient (P.prevVertex i) (P.vertex i) (P.nextVertex i) < 0 := not_le.mp hc
+    have h₁ : orient (P.prevVertex i) (P.vertex i) z =
+        -(ε * orient (P.prevVertex i) (P.vertex i) (P.nextVertex i)) := by
+      simp only [z, w, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+    have h₂ : orient (P.vertex i) (P.nextVertex i) z =
+        -(ε * orient (P.prevVertex i) (P.vertex i) (P.nextVertex i)) := by
+      simp only [z, w, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+    have hpos : 0 < -(ε * orient (P.prevVertex i) (P.vertex i) (P.nextVertex i)) := by
+      nlinarith
+    refine IsPreconnected.union z ⟨Metric.mem_ball.mpr hzd, ?_⟩ ⟨Metric.mem_ball.mpr hzd, ?_⟩
+      ((convex_ball _ _).inter (convex_orient_pos _ _)).isPreconnected
+      ((convex_ball _ _).inter (convex_orient_pos _ _)).isPreconnected
+    · show 0 < orient _ _ z; rw [h₁]; exact hpos
+    · show 0 < orient _ _ z; rw [h₂]; exact hpos
+
+theorem isCompact_segment (a b : Point2D) : IsCompact (segment ℝ a b) := by
+  rw [segment_eq_image_lineMap]
+  exact isCompact_Icc.image (AffineMap.lineMap a b : ℝ →ᵃ[ℝ] Point2D).continuous_of_finiteDimensional
+
+/-- Thin triangles beside an edge of a simple polygon avoid the boundary. -/
+theorem IsSimple.eventually_thinLeft_not_onBoundary (hP : P.IsSimple) (e : Fin P.n) :
+    ∀ᶠ h in 𝓝[>] (0 : ℝ), ∀ q ∈ P.thinLeft e h, ¬ P.OnBoundary q := by
+  set v := P.vertex e
+  set v' := P.vertex (P.next e)
+  set d := v' - v
+  set D := dot d d
+  have hvv : v ≠ v' := hP.edge_nondegenerate e
+  have hD : 0 < D := by
+    have hd : d ≠ 0 := sub_ne_zero.mpr hvv.symm
+    by_contra hle
+    apply hd
+    simp only [D, dot] at hle
+    apply Point2D.ext
+    · simp only [x_zero]; nlinarith [sq_nonneg d.x, sq_nonneg d.y]
+    · simp only [y_zero]; nlinarith [sq_nonneg d.x, sq_nonneg d.y]
+  have key : ∀ j, ∀ᶠ h in 𝓝[>] (0 : ℝ), ∀ q ∈ P.thinLeft e h,
+      q ∉ segment ℝ (P.vertex j) (P.vertex (P.next j)) := by
+    intro j
+    by_cases e₁ : j = e
+    · subst e₁
+      exact Eventually.of_forall fun h q hq hj =>
+        lt_irrefl 0 (Segment.orient_eq_zero_of_mem ⟨_, _⟩ hj ▸ hq.1)
+    by_cases e₂ : j = P.prev e
+    · subst e₂
+      set u := P.vertex (P.prev e)
+      set O := orient v v' u
+      set K := dot (u - v) d
+      have hE : ∀ᶠ h in 𝓝[>] (0 : ℝ), 0 < O → 2 * h * K < O := by
+        by_cases hO : 0 < O
+        · have : ∀ᶠ h in 𝓝 (0 : ℝ), 2 * h * K < O := by
+            have hc : Continuous fun h : ℝ => 2 * h * K := by fun_prop
+            exact hc.continuousAt.eventually (gt_mem_nhds (by simpa using hO))
+          exact (this.filter_mono nhdsWithin_le_nhds).mono fun h hh _ => hh
+        · exact Eventually.of_forall fun h h' => absurd h' hO
+      filter_upwards [hE, self_mem_nhdsWithin] with h hh hpos q hq hj
+      rw [next_prev] at hj
+      obtain ⟨t, ht, hqt⟩ := (Segment.mem_toSet_iff_exists ⟨_, _⟩).mp hj
+      have hq' : q = (1 - t) • u + t • v := hqt.symm
+      obtain ⟨h₁, h₂, -⟩ := hq
+      have e₁ : orient v v' q = (1 - t) * O := by
+        rw [hq', orient_lineMap, orient_self₁₃]; ring
+      have e₂ : dot (q - v) d = (1 - t) * K := by
+        simp only [hq', K, dot, x_sub, y_sub, x_add, y_add, x_smul, y_smul]; ring
+      rw [e₁] at h₁ h₂
+      rw [e₂] at h₂
+      have ht1 : 0 ≤ 1 - t := by linarith [ht.2]
+      by_cases hO : 0 < O
+      · nlinarith [hh hO, mul_le_mul_of_nonneg_left (hh hO).le ht1]
+      · nlinarith [mul_nonpos_of_nonneg_of_nonpos ht1 (not_lt.mp hO)]
+    by_cases e₃ : j = P.next e
+    · subst e₃
+      set w := P.vertex (P.next (P.next e))
+      set O := orient v v' w
+      set K := dot (w - v') d
+      have hE : ∀ᶠ h in 𝓝[>] (0 : ℝ), 0 < O → -(2 * h * K) < O := by
+        by_cases hO : 0 < O
+        · have : ∀ᶠ h in 𝓝 (0 : ℝ), -(2 * h * K) < O := by
+            have hc : Continuous fun h : ℝ => -(2 * h * K) := by fun_prop
+            exact hc.continuousAt.eventually (gt_mem_nhds (by simpa using hO))
+          exact (this.filter_mono nhdsWithin_le_nhds).mono fun h hh _ => hh
+        · exact Eventually.of_forall fun h h' => absurd h' hO
+      filter_upwards [hE, self_mem_nhdsWithin] with h hh hpos q hq hj
+      obtain ⟨t, ht, hqt⟩ := (Segment.mem_toSet_iff_exists ⟨_, _⟩).mp hj
+      have hq' : q = (1 - t) • v' + t • w := hqt.symm
+      obtain ⟨h₁, -, h₃⟩ := hq
+      have e₁ : orient v v' q = t * O := by
+        rw [hq', orient_lineMap, orient_self₂₃]; ring
+      have e₂ : dot (q - v) d = D + t * K := by
+        simp only [hq', K, D, d, dot, x_sub, y_sub, x_add, y_add, x_smul, y_smul]; ring
+      rw [e₁] at h₁ h₃
+      rw [e₂] at h₃
+      have ht0 : 0 ≤ t := ht.1
+      by_cases hO : 0 < O
+      · nlinarith [hh hO, mul_le_mul_of_nonneg_left (hh hO).le ht0]
+      · nlinarith [mul_nonpos_of_nonneg_of_nonpos ht0 (not_lt.mp hO)]
+    -- An edge away from `e`: at a positive distance, which the thin triangles do not reach.
+    have hdis : Disjoint (segment ℝ v v') (segment ℝ (P.vertex j) (P.vertex (P.next j))) :=
+      hP.nonadjacent_disjoint e j (Ne.symm e₁) (Ne.symm e₃) (fun h => e₂ (by rw [← h, prev_next]))
+    obtain ⟨δ, hδ, hthick⟩ := hdis.exists_thickenings (isCompact_segment _ _) (isClosed_segment _ _)
+    set C := |d.x| + |d.y|
+    have hE : ∀ᶠ h in 𝓝[>] (0 : ℝ), h * (C + 1) < δ := by
+      have hc : Continuous fun h : ℝ => h * (C + 1) := by fun_prop
+      exact (hc.continuousAt.eventually (gt_mem_nhds (by simpa using hδ))).filter_mono
+        nhdsWithin_le_nhds
+    filter_upwards [hE, self_mem_nhdsWithin] with h hh hpos q hq hj
+    obtain ⟨h₁, h₂, h₃⟩ := hq
+    set o := orient v v' q
+    set τ := dot (q - v) d
+    have h₃' : o < 2 * h * (D - τ) := h₃
+    have h2 : (0 : ℝ) ≤ 2 * h := by linarith [show (0:ℝ) < h from hpos]
+    have hτ : 0 < τ := by
+      by_contra hτ
+      have := mul_nonpos_of_nonneg_of_nonpos h2 (not_lt.mp hτ)
+      linarith
+    have hτD : τ < D := by
+      by_contra hτ
+      have := mul_nonpos_of_nonneg_of_nonpos h2 (by linarith [not_lt.mp hτ] : D - τ ≤ 0)
+      linarith
+    have hoD : o < h * D := by linarith
+    set z := v + (τ / D) • d
+    have hz : z ∈ segment ℝ v v' := by
+      refine ⟨1 - τ / D, τ / D, by rw [sub_nonneg, div_le_one hD]; exact hτD.le,
+        div_nonneg hτ.le hD.le, by ring, ?_⟩
+      simp only [z, d]
+      apply Point2D.ext <;> simp only [x_add, x_smul, y_add, y_smul, x_sub, y_sub] <;> ring
+    have hD0 : D ≠ 0 := hD.ne'
+    have hzx : q.x - z.x = -(o / D) * d.y := by
+      have : z.x = v.x + τ / D * d.x := by simp [z]
+      rw [this]
+      field_simp
+      simp only [o, τ, D, d, dot, orient_def, x_sub, y_sub]
+      ring
+    have hzy : q.y - z.y = (o / D) * d.x := by
+      have : z.y = v.y + τ / D * d.y := by simp [z]
+      rw [this]
+      field_simp
+      simp only [o, τ, D, d, dot, orient_def, x_sub, y_sub]
+      ring
+    have hoD' : 0 < o / D := div_pos h₁ hD
+    have hdist : dist q z < δ := by
+      calc dist q z ≤ |q.x - z.x| + |q.y - z.y| := dist_le_abs_add_abs _ _
+        _ = o / D * C := by
+            rw [hzx, hzy, abs_mul, abs_mul, abs_neg, abs_of_pos hoD']; simp only [C]; ring
+        _ ≤ h * (C + 1) := by
+            have : o / D < h := by rw [div_lt_iff₀ hD]; linarith
+            nlinarith [abs_nonneg d.x, abs_nonneg d.y]
+        _ < δ := hh
+    exact Set.disjoint_left.mp hthick (Metric.mem_thickening_iff.mpr ⟨z, hz, hdist⟩)
+      (Metric.self_subset_thickening hδ _ hj)
+  filter_upwards [eventually_all.mpr key] with h hh q hq ⟨j, hj⟩
+  exact hh j q hq hj
+
 end RawPolygon
 
 end ComputationalGeometry
