@@ -3,6 +3,7 @@ import LeanComputationalGeometry.Examples.Basic
 import LeanComputationalGeometry.Examples.Polygons
 import LeanComputationalGeometry.Examples.Ears
 import LeanComputationalGeometry.Examples.EarRegion
+import LeanComputationalGeometry.Examples.TwoEars
 
 /-!
 # Axiom audit
@@ -624,3 +625,171 @@ builds it.
 /-- info: 'ComputationalGeometry.Examples.ellCW_isCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.Examples.ellCW_isCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_side_values' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_side_values
+
+/-- info: 'ComputationalGeometry.RawPolygon.iterate_next_inj' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.iterate_next_inj
+
+/-- info: 'ComputationalGeometry.RawPolygon.exists_iterate_next_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.exists_iterate_next_eq
+
+/-- info: 'ComputationalGeometry.RawPolygon.sum_range_iterate_next' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sum_range_iterate_next
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_chain_add' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_chain_add
+
+/-- info: 'ComputationalGeometry.RawPolygon.onBoundary_chain_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.onBoundary_chain_iff
+
+/-- info: 'ComputationalGeometry.RawPolygon.onBoundary_chain_or' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.onBoundary_chain_or
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.vertex_injective' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.vertex_injective
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.symm' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.symm
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.eq_or_eq_of_onBoundary' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.eq_or_eq_of_onBoundary
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.mem_edge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.mem_edge
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.isSimple_chain' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.isSimple_chain
+
+/-- info: 'ComputationalGeometry.RawPolygon.exists_left_near' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.exists_left_near
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.windsZeroOrOne_chain' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.windsZeroOrOne_chain
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.openRegion_chain_subset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.openRegion_chain_subset
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.disjoint_openRegion_chain' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.disjoint_openRegion_chain
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_convexVertex' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_convexVertex
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.eq_of_mem_edge_inter' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.eq_of_mem_edge_inter
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.openSegment_subset_openRegion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.openSegment_subset_openRegion
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.isDiagonal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.isDiagonal
+
+/-- info: 'ComputationalGeometry.RawPolygon.ConvexVertex.exists_isDiagonal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.ConvexVertex.exists_isDiagonal
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_diagonal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_diagonal
+
+/-- info: 'ComputationalGeometry.RawPolygon.chain_two_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.chain_two_eq
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.isEar_two' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.isEar_two
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.exists_ear' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.exists_ear
+
+/-- info: 'ComputationalGeometry.RawPolygon.isEar_chain' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.isEar_chain
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsDiagonal.interior_earTriangle_subset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsDiagonal.interior_earTriangle_subset
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_ear' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_ear
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_two_nonoverlapping_ears' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_two_nonoverlapping_ears
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_two_ears' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_two_ears
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_ear_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_ear_of_isCCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_two_nonoverlapping_ears_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_two_nonoverlapping_ears_of_isCCW
+
+/-- info: 'ComputationalGeometry.SimplePolygon.exists_ear' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.exists_ear
+
+/-- info: 'ComputationalGeometry.SimplePolygon.isEar_someEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.isEar_someEar
+
+/-- info: 'ComputationalGeometry.SimplePolygon.exists_ear_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.exists_ear_of_isCCW
+
+/-- info: 'ComputationalGeometry.SimplePolygon.exists_two_nonoverlapping_ears' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.exists_two_nonoverlapping_ears
+
+/-- info: 'ComputationalGeometry.SimplePolygon.exists_two_nonoverlapping_ears_of_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.exists_two_nonoverlapping_ears_of_isCCW
+
+/-- info: 'ComputationalGeometry.Examples.pentagon_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.pentagon_isSimple
+
+/-- info: 'ComputationalGeometry.Examples.squareMid_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.squareMid_isSimple
+
+/-- info: 'ComputationalGeometry.Examples.comb_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.comb_isSimple
+
+/-- info: 'ComputationalGeometry.Examples.comb_isEar_two' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.comb_isEar_two
+
+/-- info: 'ComputationalGeometry.Examples.comb_isEar_six' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.comb_isEar_six

@@ -14,3 +14,5 @@ import LeanComputationalGeometry.Polygon.WindingTopology
 import LeanComputationalGeometry.Polygon.WindingArea
 import LeanComputationalGeometry.Polygon.EarRegion
 import LeanComputationalGeometry.Polygon.Jordan
+import LeanComputationalGeometry.Polygon.Diagonal
+import LeanComputationalGeometry.Polygon.TwoEars
