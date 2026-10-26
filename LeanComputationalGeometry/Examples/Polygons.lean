@@ -51,7 +51,7 @@ example : mk 2 (1 / 2) ∉ square.region := by
   apply RawPolygon.not_mem_region_of_right
   intro i
   change Fin 4 at i
-  fin_cases i <;> simp [square]
+  fin_cases i <;> simp
 
 /-- The midpoint of the bottom edge is on the boundary. -/
 example : square.OnBoundary (mk (1 / 2) 0) := by
@@ -80,7 +80,7 @@ example : square.reverse.IsCW := by
 
 /-- An L shape, counterclockwise: the unit squares `[0,2] × [0,1]` and
 `[0,1] × [1,2]`, with the notch `[1,2] × [1,2]` cut out. -/
-def ell : RawPolygon :=
+abbrev ell : RawPolygon :=
   ⟨6, ![mk 0 0, mk 2 0, mk 2 1, mk 1 1, mk 1 2, mk 0 2]⟩
 
 @[simp] theorem finRotate_six_zero : finRotate 6 0 = 1 := by decide

@@ -1,6 +1,7 @@
 import LeanComputationalGeometry
 import LeanComputationalGeometry.Examples.Basic
 import LeanComputationalGeometry.Examples.Polygons
+import LeanComputationalGeometry.Examples.Ears
 
 /-!
 # Axiom audit
@@ -222,3 +223,103 @@ builds it.
 /-- info: 'ComputationalGeometry.Examples.square_windingNumber_inside' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.Examples.square_windingNumber_inside
+
+/-- info: 'ComputationalGeometry.Triangle.exists_onEdge_mem_segment' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.exists_onEdge_mem_segment
+
+/-- info: 'ComputationalGeometry.Triangle.disjoint_toSet_of_avoid' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.disjoint_toSet_of_avoid
+
+/-- info: 'ComputationalGeometry.Triangle.segment_inter_segment_eq_of_not_mem' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Triangle.segment_inter_segment_eq_of_not_mem
+
+/-- info: 'ComputationalGeometry.RawPolygon.distinct5' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.distinct5
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.vertex_mem_edge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.vertex_mem_edge
+
+/-- info: 'ComputationalGeometry.RawPolygon.not_isEar_of_reflexVertex' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.not_isEar_of_reflexVertex
+
+/-- info: 'ComputationalGeometry.RawPolygon.not_isEar_of_locallyDegenerate' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.not_isEar_of_locallyDegenerate
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.disjoint_edge_earDiagonal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.disjoint_edge_earDiagonal
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.edge_prev_prev_inter_earDiagonal' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.edge_prev_prev_inter_earDiagonal
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.earDiagonal_inter_edge_next' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.earDiagonal_inter_edge_next
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.earDiagonal_relInterior_inter_boundary' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.earDiagonal_relInterior_inter_boundary
+
+/-- info: 'ComputationalGeometry.RawPolygon.Relabel.isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.Relabel.isSimple
+
+/-- info: 'ComputationalGeometry.RawPolygon.Relabel.region_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.Relabel.region_eq
+
+/-- info: 'ComputationalGeometry.RawPolygon.removeEar_n' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.removeEar_n
+
+/-- info: 'ComputationalGeometry.RawPolygon.sum_edges_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sum_edges_removeEar
+
+/-- info: 'ComputationalGeometry.RawPolygon.signedArea2_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.signedArea2_removeEar
+
+/-- info: 'ComputationalGeometry.RawPolygon.windingNumber_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.windingNumber_removeEar
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsEar.isSimple_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsEar.isSimple_removeEar
+
+/-- info: 'ComputationalGeometry.RawPolygon.region_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.region_removeEar
+
+/-- info: 'ComputationalGeometry.SimplePolygon.toRegion_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.toRegion_removeEar
+
+/-- info: 'ComputationalGeometry.Examples.square_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_isSimple
+
+/-- info: 'ComputationalGeometry.Examples.square_isEar_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_isEar_zero
+
+/-- info: 'ComputationalGeometry.Examples.square_removeEar_isSimple' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_removeEar_isSimple
+
+/-- info: 'ComputationalGeometry.Examples.ell_not_isEar_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ell_not_isEar_zero
+
+/-- info: 'ComputationalGeometry.Examples.ell_isEar_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.ell_isEar_one

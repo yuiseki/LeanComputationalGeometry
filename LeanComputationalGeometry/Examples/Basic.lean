@@ -96,7 +96,7 @@ example : tri.toPolygon.signedArea2 = 1 := by
   simp [Triangle.signedArea2, tri, orient_def]
 
 /-- The unit square, counterclockwise from the origin. -/
-def square : RawPolygon := ⟨4, ![mk 0 0, mk 1 0, mk 1 1, mk 0 1]⟩
+abbrev square : RawPolygon := ⟨4, ![mk 0 0, mk 1 0, mk 1 1, mk 0 1]⟩
 
 theorem square_signedArea2 : square.signedArea2 = 2 := by
   show ∑ i : Fin 4, cross (![mk 0 0, mk 1 0, mk 1 1, mk 0 1] i)
