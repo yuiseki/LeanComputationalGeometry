@@ -721,6 +721,69 @@ theorem IsSimple.eventually_thinLeft_meets_leftSector_next (hP : P.IsSimple) (e 
     · exact ⟨by rw [o₁]; exact hshD, by rw [o₃]; exact mul_pos hs (hE hc)⟩
     · exact Or.inl (by rw [o₁]; exact hshD)
 
+/-- Lower thin triangles lie in higher ones. -/
+theorem thinLeft_mono (e : Fin P.n) {h h₀ : ℝ} (hh : 0 < h) (hle : h ≤ h₀) :
+    P.thinLeft e h ⊆ P.thinLeft e h₀ := by
+  rintro q ⟨h₁, h₂, h₃⟩
+  have hτ : 0 < dot (q - P.vertex e) (P.vertex (P.next e) - P.vertex e) := by
+    by_contra hτ
+    have := mul_nonpos_of_nonneg_of_nonpos (by linarith : (0:ℝ) ≤ 2 * h) (not_lt.mp hτ)
+    linarith
+  have hτ' : 0 < dot (P.vertex (P.next e) - P.vertex e) (P.vertex (P.next e) - P.vertex e) -
+      dot (q - P.vertex e) (P.vertex (P.next e) - P.vertex e) := by
+    by_contra hτ'
+    have := mul_nonpos_of_nonneg_of_nonpos (by linarith : (0:ℝ) ≤ 2 * h) (not_lt.mp hτ')
+    linarith
+  exact ⟨h₁, by nlinarith, by nlinarith⟩
+
+/-- Beside one edge of a simple polygon, the winding number takes one value on
+the small thin triangles and on the small sectors at both ends. -/
+theorem IsSimple.exists_edge_value (hP : P.IsSimple) (e : Fin P.n) :
+    ∃ c : ℤ, (∀ᶠ h in 𝓝[>] (0 : ℝ), ∀ q ∈ P.thinLeft e h, P.windingNumber q = c) ∧
+      (∀ᶠ r in 𝓝[>] (0 : ℝ), ∀ q ∈ P.leftSector e r, P.windingNumber q = c) ∧
+      (∀ᶠ r in 𝓝[>] (0 : ℝ), ∀ q ∈ P.leftSector (P.next e) r, P.windingNumber q = c) ∧
+      (∀ r, 0 < r → (P.leftSector (P.next e) r).Nonempty) := by
+  have hF := ((hP.eventually_thinLeft_not_onBoundary e).and
+    ((hP.eventually_thinLeft_meets_leftSector e).and
+      (hP.eventually_thinLeft_meets_leftSector_next e))).and self_mem_nhdsWithin
+  obtain ⟨h₀, ⟨hav, hst, hen⟩, hh₀⟩ := hF.exists
+  have hh₀ : (0 : ℝ) < h₀ := hh₀
+  obtain ⟨q₀, hq₀, -⟩ := hst 1 one_pos
+  have hconst : ∀ q ∈ P.thinLeft e h₀, P.windingNumber q = P.windingNumber q₀ := fun q hq =>
+    P.windingNumber_eq_of_isPreconnected (isPreconnected_thinLeft e h₀) hav hq hq₀
+  refine ⟨P.windingNumber q₀, ?_, ?_, ?_, fun r hr => (hen r hr).mono inter_subset_right⟩
+  · filter_upwards [Ioo_mem_nhdsGT hh₀] with h hh q hq
+    exact hconst q (thinLeft_mono e hh.1 hh.2.le hq)
+  · filter_upwards [hP.eventually_leftSector_not_onBoundary e, self_mem_nhdsWithin] with r hr hr0 q hq
+    obtain ⟨z, hz₁, hz₂⟩ := hst r hr0
+    rw [P.windingNumber_eq_of_isPreconnected (isPreconnected_leftSector e hr0) hr hq hz₂]
+    exact hconst z hz₁
+  · filter_upwards [hP.eventually_leftSector_not_onBoundary (P.next e), self_mem_nhdsWithin]
+      with r hr hr0 q hq
+    obtain ⟨z, hz₁, hz₂⟩ := hen r hr0
+    rw [P.windingNumber_eq_of_isPreconnected (isPreconnected_leftSector (P.next e) hr0) hr hq hz₂]
+    exact hconst z hz₁
+
+/-- Beside every edge of a simple polygon, on its left, the winding number
+takes one and the same value. -/
+theorem IsSimple.exists_left_value (hP : P.IsSimple) :
+    ∃ L : ℤ, ∀ e, ∀ᶠ h in 𝓝[>] (0 : ℝ), ∀ q ∈ P.thinLeft e h, P.windingNumber q = L := by
+  choose c hthin hstart hend hne using hP.exists_edge_value
+  have hstep : ∀ e, c (P.next e) = c e := by
+    intro e
+    obtain ⟨r, ⟨h₁, h₂⟩, hr⟩ := ((hstart (P.next e)).and (hend e)).and self_mem_nhdsWithin |>.exists
+    obtain ⟨q, hq⟩ := hne e r hr
+    rw [← h₁ q hq, h₂ q hq]
+  have h0 : 0 < P.n := by have := hP.three_le; omega
+  refine ⟨c ⟨0, h0⟩, fun e => ?_⟩
+  have : c e = c ⟨0, h0⟩ := by
+    rw [← iterate_next_zero h0 e]
+    induction e.val with
+    | zero => rfl
+    | succ k ih => rw [Function.iterate_succ_apply', hstep, ih]
+  rw [← this]
+  exact hthin e
+
 end RawPolygon
 
 end ComputationalGeometry
