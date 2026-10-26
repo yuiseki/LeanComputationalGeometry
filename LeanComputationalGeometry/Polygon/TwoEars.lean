@@ -431,6 +431,248 @@ theorem IsSimple.exists_diagonal (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) (h4 :
   · obtain ⟨k, hk⟩ := hv.exists_isDiagonal hP hJ h4 he
     exact ⟨v, k, hk⟩
 
+/-! ## Ears inside a chain -/
+
+/-- A chain of two steps is the ear triangle of its middle vertex. -/
+theorem chain_two_eq (i : Fin P.n) : P.chain i 2 = (P.earTriangle (P.next i)).toPolygon := by
+  unfold chain Triangle.toPolygon
+  congr 1
+  funext m
+  fin_cases m <;> simp [earTriangle, prevVertex, nextVertex]
+
+/-- The middle vertex of a chain of two steps cut off by a diagonal is an ear. -/
+theorem IsDiagonal.isEar_two (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) {i : Fin P.n}
+    (hD : P.IsDiagonal i 2) : P.IsEar (P.next i) := by
+  set T := P.earTriangle (P.next i)
+  have hQ := hD.isSimple_chain hP
+  have hQJ := hD.windsZeroOrOne_chain hP hJ
+  rw [chain_two_eq] at hQ hQJ
+  have hTa : T.a = P.vertex i := by simp [T, earTriangle, prevVertex]
+  -- The triangle is not flat, the chain being simple.
+  have hnd : T.signedArea2 ≠ 0 := by
+    have hab : T.a ≠ T.b := by
+      rw [hTa]; exact fun e => next_ne_self hP.three_le i (hP.vertex_injective e).symm
+    obtain ⟨m, hm⟩ := not_forall.mp (hQ.not_forall_orient_eq_zero hab)
+    fin_cases m
+    · exact (hm (by show orient T.a T.b T.a = 0; simp)).elim
+    · exact (hm (by show orient T.a T.b T.b = 0; simp)).elim
+    · exact hm
+  have hpos : 0 ≤ T.signedArea2 := by
+    have := hQJ.signedArea2_nonneg
+    rwa [Triangle.signedArea2_toPolygon] at this
+  have hT : T.IsCCW := lt_of_le_of_ne hpos (Ne.symm hnd)
+  refine ⟨hT, fun j h₁ h₂ h₃ hj => ?_⟩
+  rw [prev_next] at h₁
+  by_cases hint : P.vertex j ∈ interior T.toSet
+  · have h₀ := (Triangle.mem_openRegion_toPolygon_iff_of_isCCW hT).mpr hint
+    rw [← chain_two_eq] at h₀
+    exact (hD.openRegion_chain_subset hP hJ h₀).1 (P.onBoundary_vertex j)
+  have hfr : P.vertex j ∈ frontier T.toSet := ⟨subset_closure hj, hint⟩
+  rcases (Triangle.mem_frontier_toSet_iff_edges hT _).mp hfr with h | h | h
+  · have h' : P.vertex j ∈ (P.edge i).toSet := by
+      rw [edge_toSet]; simpa [T, earTriangle, prevVertex, nextVertex] using h
+    rcases hP.vertex_mem_edge h' with e | e
+    · exact h₁ e.symm
+    · exact h₂ e.symm
+  · have h' : P.vertex j ∈ (P.edge (P.next i)).toSet := by
+      rw [edge_toSet]; simpa [T, earTriangle, prevVertex, nextVertex] using h
+    rcases hP.vertex_mem_edge h' with e | e
+    · exact h₂ e.symm
+    · exact h₃ e.symm
+  · have h' : P.vertex j ∈ segment ℝ (P.vertex i) (P.vertex (P.next^[2] i)) := by
+      rw [segment_symm]; simpa [T, earTriangle, prevVertex, nextVertex] using h
+    rcases hD.eq_or_eq_of_onBoundary h' (P.onBoundary_vertex j) with e | e
+    · exact h₁ (hP.vertex_injective e)
+    · exact h₃ (hP.vertex_injective e)
+
+/-- Inside the chain cut off by a diagonal there is an ear: strictly between
+the ends of the diagonal. -/
+theorem IsDiagonal.exists_ear (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) :
+    ∀ {k : ℕ} {i : Fin P.n}, P.IsDiagonal i k → ∃ m, 0 < m ∧ m < k ∧ P.IsEar (P.next^[m] i) := by
+  intro k
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+  intro i hD
+  rcases hD.two_le.eq_or_lt with h2 | h2
+  · subst h2
+    exact ⟨1, one_pos, by omega, hD.isEar_two hP hJ⟩
+  -- A diagonal of the chain, on the side away from the closing segment.
+  set Q := P.chain i k
+  have hQ := hD.isSimple_chain hP
+  have hQJ := hD.windsZeroOrOne_chain hP hJ
+  obtain ⟨a, l, hDQ⟩ := hQ.exists_diagonal hQJ (by simp only [chain_n]; omega)
+  obtain ⟨a', l', hDQ', hfit⟩ : ∃ a' l', Q.IsDiagonal a' l' ∧ a'.val + l' ≤ k := by
+    by_cases hfit : a.val + l ≤ k
+    · exact ⟨a, l, hDQ, hfit⟩
+    · refine ⟨_, _, hDQ.symm, ?_⟩
+      have ha := a.isLt
+      have hl := hDQ.add_two_le
+      have hv := val_iterate_next (P.chain i k) a l
+      simp only [Q, chain_n] at ha hl hv ⊢
+      rw [hv, Nat.mod_eq_sub_mod (by omega), Nat.mod_eq_of_lt (by omega)]
+      omega
+  have hl' := hDQ'.add_two_le
+  simp only [Q, chain_n] at hl'
+  -- It is a diagonal of the polygon, cutting off fewer steps.
+  have hPD : P.IsDiagonal (P.next^[a'.val] i) l' := by
+    refine ⟨hDQ'.two_le, by have := hD.add_two_le; omega, ?_⟩
+    have e₂ : Q.vertex (Q.next^[l'] a') = P.vertex (P.next^[l'] (P.next^[a'.val] i)) := by
+      have hv := val_iterate_next Q a' l'
+      change _ = (a'.val + l') % (k + 1) at hv
+      rw [chain_vertex, hv, Nat.mod_eq_of_lt (by omega), ← iterate_next_add, Nat.add_comm]
+    rw [show P.vertex (P.next^[a'.val] i) = Q.vertex a' from rfl, ← e₂]
+    exact hDQ'.openSegment_subset.trans (hD.openRegion_chain_subset hP hJ)
+  obtain ⟨m', hm'0, hm'l, hear⟩ := ih l' (by omega) hPD
+  refine ⟨m' + a'.val, by omega, by omega, ?_⟩
+  rwa [iterate_next_add]
+
+/-! ## Ears of the polygon as ears of a chain -/
+
+section ChainEar
+
+variable {i : Fin P.n} {k m : ℕ}
+
+theorem chain_val_next_of_lt (x : Fin (P.chain i k).n) (hx : x.val < k) :
+    ((P.chain i k).next x).val = x.val + 1 := by
+  rw [chain_val_next]; exact Nat.mod_eq_of_lt (by omega)
+
+theorem chain_val_prev_of_pos (x : Fin (P.chain i k).n) (hx0 : 0 < x.val) :
+    ((P.chain i k).prev x).val = x.val - 1 := by
+  have hx := x.isLt
+  simp only [chain_n] at hx
+  have : (P.chain i k).next ⟨x.val - 1, by simp only [chain_n]; omega⟩ = x :=
+    Fin.ext (by rw [chain_val_next_of_lt _ (by show x.val - 1 < k; omega)]; show x.val - 1 + 1 = _; omega)
+  calc ((P.chain i k).prev x).val
+      = ((P.chain i k).prev ((P.chain i k).next ⟨x.val - 1, by simp only [chain_n]; omega⟩)).val := by
+        rw [this]
+    _ = x.val - 1 := by rw [prev_next]
+
+theorem iterate_next_pred_of_pos (hm0 : 0 < m) : P.prev (P.next^[m] i) = P.next^[m - 1] i := by
+  rw [← Nat.sub_add_cancel hm0, Function.iterate_succ_apply', prev_next, Nat.add_sub_cancel]
+
+/-- At an inner vertex, the ear triangle of a chain is that of the polygon. -/
+theorem chain_earTriangle (hm0 : 0 < m) (hm : m < k) :
+    (P.chain i k).earTriangle ⟨m, by simp only [chain_n]; omega⟩ =
+      P.earTriangle (P.next^[m] i) := by
+  simp only [earTriangle, prevVertex, nextVertex, chain_vertex]
+  rw [chain_val_prev_of_pos _ hm0, chain_val_next_of_lt _ hm, iterate_next_pred_of_pos hm0,
+    Function.iterate_succ_apply']
+
+/-- An ear of the polygon at an inner vertex of a chain, with fewer than `n`
+steps, is an ear of the chain. -/
+theorem isEar_chain (hkn : k < P.n) (hm0 : 0 < m) (hm : m < k)
+    (h : P.IsEar (P.next^[m] i)) :
+    (P.chain i k).IsEar ⟨m, by simp only [chain_n]; omega⟩ := by
+  refine ⟨?_, fun j h₁ h₂ h₃ hj => ?_⟩
+  · show (P.chain i k).earTriangle _ |>.IsCCW
+    rw [chain_earTriangle hm0 hm]; exact h.convex
+  rw [chain_earTriangle hm0 hm, chain_vertex] at hj
+  have hjk := j.isLt
+  simp only [chain_n] at hjk
+  refine h.empty _ (fun e => h₁ ?_) (fun e => h₂ ?_) (fun e => h₃ ?_) hj
+  · rw [iterate_next_pred_of_pos hm0] at e
+    have := iterate_next_inj i (by omega) (by omega) e
+    ext; rw [chain_val_prev_of_pos _ hm0]; exact this
+  · have := iterate_next_inj i (by omega) (by omega) e
+    ext; exact this
+  · rw [← Function.iterate_succ_apply' P.next] at e
+    have := iterate_next_inj i (by omega) (by omega) e
+    ext; rw [chain_val_next_of_lt _ hm]; exact this
+
+/-- The ear triangle of an ear inside the chain cut off by a diagonal lies, but
+for its boundary, in the open region of the chain. -/
+theorem IsDiagonal.interior_earTriangle_subset (hP : P.IsSimple) (hJ : P.WindsZeroOrOne)
+    (hD : P.IsDiagonal i k) (hm0 : 0 < m) (hm : m < k) (h : P.IsEar (P.next^[m] i)) :
+    interior (P.earTriangle (P.next^[m] i)).toSet ⊆ (P.chain i k).openRegion := by
+  rcases hD.two_le.eq_or_lt with h2 | h2
+  · subst h2
+    obtain rfl : m = 1 := by omega
+    intro x hx
+    rw [chain_two_eq]
+    exact (Triangle.mem_openRegion_toPolygon_iff_of_isCCW h.isCCW).mpr hx
+  · have := (isEar_chain (by have := hD.add_two_le; omega) hm0 hm h).interior_earTriangle_subset_openRegion
+      (hD.isSimple_chain hP) (by simp only [chain_n]; omega) (hD.windsZeroOrOne_chain hP hJ)
+    rwa [chain_earTriangle hm0 hm] at this
+
+end ChainEar
+
+/-! ## Two ears -/
+
+/-- A simple polygon with at least four vertices that winds `0` or `1` times
+has an ear. -/
+theorem IsSimple.exists_ear (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) (h4 : 4 ≤ P.n) :
+    ∃ i, P.IsEar i := by
+  obtain ⟨i, k, hD⟩ := hP.exists_diagonal hJ h4
+  obtain ⟨m, -, -, h⟩ := hD.exists_ear hP hJ
+  exact ⟨_, h⟩
+
+/-- Meisters' Two Ears Theorem: a simple polygon with at least four vertices
+that winds `0` or `1` times has two ears whose triangles do not overlap. -/
+theorem IsSimple.exists_two_nonoverlapping_ears (hP : P.IsSimple) (hJ : P.WindsZeroOrOne)
+    (h4 : 4 ≤ P.n) :
+    ∃ i j : Fin P.n, i ≠ j ∧ P.IsEar i ∧ P.IsEar j ∧
+      Disjoint (interior (P.earTriangle i).toSet) (interior (P.earTriangle j).toSet) := by
+  obtain ⟨i, k, hD⟩ := hP.exists_diagonal hJ h4
+  have hn := hD.add_two_le
+  obtain ⟨m₁, h₁0, h₁k, h₁⟩ := hD.exists_ear hP hJ
+  obtain ⟨m₂, h₂0, h₂k, h₂⟩ := hD.symm.exists_ear hP hJ
+  refine ⟨_, _, fun e => ?_, h₁, h₂, ?_⟩
+  · rw [← iterate_next_add] at e
+    have := iterate_next_inj i (by omega) (by omega) e
+    omega
+  · exact (hD.disjoint_openRegion_chain hP hJ).mono
+      (hD.interior_earTriangle_subset hP hJ h₁0 h₁k h₁)
+      (hD.symm.interior_earTriangle_subset hP hJ h₂0 h₂k h₂)
+
+/-- Two different ears. -/
+theorem IsSimple.exists_two_ears (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) (h4 : 4 ≤ P.n) :
+    ∃ i j : Fin P.n, i ≠ j ∧ P.IsEar i ∧ P.IsEar j := by
+  obtain ⟨i, j, hij, hi, hj, -⟩ := hP.exists_two_nonoverlapping_ears hJ h4
+  exact ⟨i, j, hij, hi, hj⟩
+
+theorem IsSimple.exists_ear_of_isCCW (hP : P.IsSimple) (hccw : P.IsCCW) (h4 : 4 ≤ P.n) :
+    ∃ i, P.IsEar i :=
+  hP.exists_ear (hP.windsZeroOrOne_of_isCCW hccw) h4
+
+theorem IsSimple.exists_two_nonoverlapping_ears_of_isCCW (hP : P.IsSimple) (hccw : P.IsCCW)
+    (h4 : 4 ≤ P.n) :
+    ∃ i j : Fin P.n, i ≠ j ∧ P.IsEar i ∧ P.IsEar j ∧
+      Disjoint (interior (P.earTriangle i).toSet) (interior (P.earTriangle j).toSet) :=
+  hP.exists_two_nonoverlapping_ears (hP.windsZeroOrOne_of_isCCW hccw) h4
+
 end RawPolygon
+
+namespace SimplePolygon
+
+theorem exists_ear (P : SimplePolygon) (hJ : P.1.WindsZeroOrOne) (h4 : 4 ≤ P.1.n) :
+    ∃ i, P.1.IsEar i :=
+  P.2.exists_ear hJ h4
+
+/-- Some ear, chosen without a policy, to be cut by `SimplePolygon.removeEar`. -/
+noncomputable def someEar (P : SimplePolygon) (hJ : P.1.WindsZeroOrOne) (h4 : 4 ≤ P.1.n) :
+    Fin P.1.n :=
+  Classical.choose (P.exists_ear hJ h4)
+
+theorem isEar_someEar (P : SimplePolygon) (hJ : P.1.WindsZeroOrOne) (h4 : 4 ≤ P.1.n) :
+    P.1.IsEar (P.someEar hJ h4) :=
+  Classical.choose_spec (P.exists_ear hJ h4)
+
+theorem exists_ear_of_isCCW (P : SimplePolygon) (hccw : P.1.IsCCW) (h4 : 4 ≤ P.1.n) :
+    ∃ i, P.1.IsEar i :=
+  P.2.exists_ear_of_isCCW hccw h4
+
+theorem exists_two_nonoverlapping_ears (P : SimplePolygon) (hJ : P.1.WindsZeroOrOne)
+    (h4 : 4 ≤ P.1.n) :
+    ∃ i j : Fin P.1.n, i ≠ j ∧ P.1.IsEar i ∧ P.1.IsEar j ∧
+      Disjoint (interior (P.1.earTriangle i).toSet) (interior (P.1.earTriangle j).toSet) :=
+  P.2.exists_two_nonoverlapping_ears hJ h4
+
+theorem exists_two_nonoverlapping_ears_of_isCCW (P : SimplePolygon) (hccw : P.1.IsCCW)
+    (h4 : 4 ≤ P.1.n) :
+    ∃ i j : Fin P.1.n, i ≠ j ∧ P.1.IsEar i ∧ P.1.IsEar j ∧
+      Disjoint (interior (P.1.earTriangle i).toSet) (interior (P.1.earTriangle j).toSet) :=
+  P.2.exists_two_nonoverlapping_ears_of_isCCW hccw h4
+
+end SimplePolygon
 
 end ComputationalGeometry
