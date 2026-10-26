@@ -12,3 +12,4 @@ import LeanComputationalGeometry.Polygon.Ear
 import LeanComputationalGeometry.Polygon.RemoveEar
 import LeanComputationalGeometry.Polygon.WindingTopology
 import LeanComputationalGeometry.Polygon.EarRegion
+import LeanComputationalGeometry.Polygon.Jordan
