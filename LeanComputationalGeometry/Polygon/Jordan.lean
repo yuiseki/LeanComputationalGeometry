@@ -784,6 +784,156 @@ theorem IsSimple.exists_left_value (hP : P.IsSimple) :
   rw [← this]
   exact hthin e
 
+/-- Three points on a line through a fourth, other point: the line of the
+first two goes through the fourth. -/
+theorem orient_eq_zero_of_collinear {p k a b : Point2D} (hpk : p ≠ k) (ha : orient p k a = 0)
+    (hb : orient p k b = 0) : orient a b p = 0 := by
+  have hu : k - p ≠ 0 := sub_ne_zero.mpr hpk.symm
+  obtain ⟨α, hα⟩ := exists_smul_of_cross_eq_zero hu (w := a - p) (by
+    simp only [orient_def] at ha; simp only [cross, x_sub, y_sub]; linarith)
+  obtain ⟨β, hβ⟩ := exists_smul_of_cross_eq_zero hu (w := b - p) (by
+    simp only [orient_def] at hb; simp only [cross, x_sub, y_sub]; linarith)
+  have ea : a = p + α • (k - p) := by rw [← hα]; abel
+  have eb : b = p + β • (k - p) := by rw [← hβ]; abel
+  rw [ea, eb]
+  simp only [orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]
+  ring
+
+/-- From a point off the boundary of a simple polygon, a straight path reaches
+the boundary first at a point inside an edge, from one side of it, without
+crossing the boundary on the way. -/
+theorem IsSimple.exists_approach (hP : P.IsSimple) {p : Point2D} (hp : ¬ P.OnBoundary p) :
+    ∃ f : Fin P.n, ∃ q₀ ∈ openSegment ℝ (P.vertex f) (P.vertex (P.next f)),
+      ∃ γ : ℝ → Point2D, Tendsto γ (𝓝[>] 0) (𝓝 q₀) ∧
+        ((∀ᶠ δ in 𝓝[>] (0 : ℝ), 0 < orient (P.vertex f) (P.vertex (P.next f)) (γ δ) ∧
+            P.windingNumber (γ δ) = P.windingNumber p) ∨
+          (∀ᶠ δ in 𝓝[>] (0 : ℝ), orient (P.vertex f) (P.vertex (P.next f)) (γ δ) < 0 ∧
+            P.windingNumber (γ δ) = P.windingNumber p)) := by
+  classical
+  have hpv : ∀ k, P.vertex k ≠ p := fun k e => hp (e ▸ P.onBoundary_vertex k)
+  -- Aim at a point inside an edge whose line misses `p`, avoiding the lines from `p`
+  -- through the vertices.
+  obtain ⟨e, he⟩ := hP.exists_orient_ne_zero hp
+  set v := P.vertex e
+  set v' := P.vertex (P.next e)
+  set a : Fin P.n → ℝ := fun k => orient p (P.vertex k) v
+  set b : Fin P.n → ℝ := fun k => orient p (P.vertex k) v'
+  set root : Fin P.n → ℝ := fun k => if a k = b k then 0 else a k / (a k - b k)
+  obtain ⟨t, ht, htr⟩ := (Set.Ioo_infinite (zero_lt_one' ℝ)).exists_notMem_finset
+    (Finset.univ.image root)
+  set x := (1 - t) • v + t • v'
+  have hgx : ∀ k, orient p (P.vertex k) x ≠ 0 := by
+    intro k hk
+    have hk' : (1 - t) * a k + t * b k = 0 := by rw [← hk, orient_lineMap]
+    by_cases hab : a k = b k
+    · have ha0 : a k = 0 := by rw [← hab] at hk'; linarith
+      have hb0 : b k = 0 := by rw [← hab]; exact ha0
+      exact he (orient_eq_zero_of_collinear (hpv k).symm ha0 hb0)
+    · apply htr
+      refine Finset.mem_image.mpr ⟨k, Finset.mem_univ _, ?_⟩
+      rw [show root k = a k / (a k - b k) by simp [root, hab]]
+      have : a k - b k ≠ 0 := sub_ne_zero.mpr hab
+      field_simp
+      linarith
+  have hx : x ∈ openSegment ℝ v v' := ⟨1 - t, t, by linarith [ht.2], ht.1, by ring, rfl⟩
+  have hxB : P.OnBoundary x := ⟨e, openSegment_subset_segment _ _ _ hx⟩
+  have hnovert : ∀ k, P.vertex k ∉ segment ℝ p x := by
+    intro k hk
+    apply hgx k
+    have := Segment.orient_eq_zero_of_mem ⟨p, x⟩ hk
+    rw [orient_swap₂₃] at this
+    simpa using this
+  -- The first point of the path on the boundary.
+  set γp : ℝ → Point2D := fun s => (1 - s) • p + s • x
+  have hγc : Continuous γp := by fun_prop
+  set K := {s | s ∈ Icc (0 : ℝ) 1 ∧ P.OnBoundary (γp s)}
+  have hKc : IsClosed K := isClosed_Icc.inter (P.isClosed_onBoundary.preimage hγc)
+  have hK1 : (1 : ℝ) ∈ K := ⟨⟨zero_le_one, le_rfl⟩, by simpa [γp] using hxB⟩
+  have hKb : BddBelow K := ⟨0, fun s hs => hs.1.1⟩
+  set s₀ := sInf K
+  have hs₀K : s₀ ∈ K := hKc.csInf_mem ⟨1, hK1⟩ hKb
+  have hs₀0 : 0 < s₀ := by
+    rcases eq_or_lt_of_le hs₀K.1.1 with h | h
+    · have := hs₀K.2
+      rw [← h] at this
+      exact absurd (by simpa [γp] using this) hp
+    · exact h
+  have hbefore : ∀ s, 0 ≤ s → s < s₀ → ¬ P.OnBoundary (γp s) := fun s hs hss hb =>
+    absurd (csInf_le hKb ⟨⟨hs, by linarith [hs₀K.1.2]⟩, hb⟩) (not_le.mpr hss)
+  set q₀ := γp s₀
+  have hq₀seg : q₀ ∈ segment ℝ p x := ⟨1 - s₀, s₀, by linarith [hs₀K.1.2], hs₀K.1.1, by ring, rfl⟩
+  obtain ⟨f, hf⟩ := hs₀K.2
+  rw [edge_toSet] at hf
+  have hq₀f : q₀ ∈ openSegment ℝ (P.vertex f) (P.vertex (P.next f)) :=
+    mem_openSegment_of_ne_left_right (fun h => hnovert f (h ▸ hq₀seg))
+      (fun h => hnovert (P.next f) (h ▸ hq₀seg)) hf
+  -- Approach along the path, backwards from the first boundary point.
+  set γ : ℝ → Point2D := fun δ => γp (s₀ - δ)
+  have hγ : Tendsto γ (𝓝[>] 0) (𝓝 q₀) := by
+    have : Continuous γ := by fun_prop
+    have h0 : γ 0 = q₀ := by simp [γ, q₀]
+    exact (h0 ▸ this.tendsto 0).mono_left nhdsWithin_le_nhds
+  have hpath : ∀ δ, 0 < δ → δ ≤ s₀ → ¬ P.OnBoundary (γ δ) ∧
+      P.windingNumber (γ δ) = P.windingNumber p := by
+    intro δ hδ hδs
+    have havoid : ∀ z ∈ γp '' Icc 0 (s₀ - δ), ¬ P.OnBoundary z := by
+      rintro z ⟨s, hs, rfl⟩
+      exact hbefore s hs.1 (by linarith [hs.2])
+    refine ⟨havoid _ ⟨s₀ - δ, ⟨by linarith, le_rfl⟩, rfl⟩, ?_⟩
+    exact P.windingNumber_eq_of_isPreconnected (isPreconnected_Icc.image _ hγc.continuousOn)
+      havoid ⟨s₀ - δ, ⟨by linarith, le_rfl⟩, rfl⟩ ⟨0, ⟨le_rfl, by linarith⟩, by simp [γp]⟩
+  have hev : ∀ᶠ δ in 𝓝[>] (0 : ℝ), ¬ P.OnBoundary (γ δ) ∧
+      P.windingNumber (γ δ) = P.windingNumber p := by
+    filter_upwards [Ioo_mem_nhdsGT hs₀0] with δ hδ
+    exact hpath δ hδ.1 hδ.2.le
+  -- The side is fixed: the orientation against `f` is linear in `δ` and vanishes at `0`.
+  set Op := orient (P.vertex f) (P.vertex (P.next f)) p
+  set Ox := orient (P.vertex f) (P.vertex (P.next f)) x
+  have horient : ∀ δ, orient (P.vertex f) (P.vertex (P.next f)) (γ δ) = δ * (Op - Ox) := by
+    intro δ
+    have h0 : (1 - s₀) * Op + s₀ * Ox = 0 := by
+      have := Segment.orient_eq_zero_of_mem ⟨_, _⟩ hf
+      simp only [γp, orient_lineMap] at this
+      exact this
+    simp only [γ, γp, orient_lineMap]
+    linear_combination h0
+  refine ⟨f, q₀, hq₀f, γ, hγ, ?_⟩
+  rcases lt_trichotomy (Op - Ox) 0 with hκ | hκ | hκ
+  · right
+    filter_upwards [hev, self_mem_nhdsWithin] with δ hδ (hδ0 : 0 < δ)
+    exact ⟨by rw [horient]; exact mul_neg_of_pos_of_neg hδ0 hκ, hδ.2⟩
+  · -- Along the edge's line: then the path runs inside the edge just before `q₀`.
+    exfalso
+    have hd : P.vertex (P.next f) - P.vertex f ≠ 0 :=
+      sub_ne_zero.mpr (hP.edge_nondegenerate f).symm
+    obtain ⟨μ, hμ⟩ := exists_smul_of_cross_eq_zero hd (w := x - p) (by
+      have : Ox - Op = 0 := by linarith
+      simp only [Ox, Op, orient_def] at this
+      simp only [cross, x_sub, y_sub]
+      linarith)
+    obtain ⟨α, τ₀, hα, hτ₀, hsum, hq₀eq⟩ := hq₀f
+    obtain rfl : α = 1 - τ₀ := by linarith
+    have hγeq : ∀ δ, γ δ = (1 - (τ₀ - δ * μ)) • P.vertex f + (τ₀ - δ * μ) • P.vertex (P.next f) := by
+      intro δ
+      have e₁ : γ δ = q₀ - δ • (x - p) := by
+        simp only [γ, γp, q₀]
+        module
+      rw [e₁, ← hq₀eq, hμ]
+      module
+    have hev' : ∀ᶠ δ in 𝓝[>] (0 : ℝ), 0 ≤ τ₀ - δ * μ ∧ τ₀ - δ * μ ≤ 1 := by
+      have hc : Continuous fun δ : ℝ => τ₀ - δ * μ := by fun_prop
+      have h₁ := hc.continuousAt.eventually (lt_mem_nhds (show (0:ℝ) < τ₀ - 0 * μ by simpa using hτ₀))
+      have h₂ := hc.continuousAt.eventually (gt_mem_nhds (show τ₀ - 0 * μ < 1 by simp; linarith))
+      exact ((h₁.and h₂).filter_mono nhdsWithin_le_nhds).mono fun δ h => ⟨h.1.le, h.2.le⟩
+    obtain ⟨δ, ⟨hδ, hδ'⟩⟩ := (hev.and hev').exists
+    apply hδ.1
+    refine ⟨f, ?_⟩
+    rw [edge_toSet, hγeq]
+    exact ⟨1 - (τ₀ - δ * μ), τ₀ - δ * μ, by linarith [hδ'.2], hδ'.1, by ring, rfl⟩
+  · left
+    filter_upwards [hev, self_mem_nhdsWithin] with δ hδ (hδ0 : 0 < δ)
+    exact ⟨by rw [horient]; exact mul_pos hδ0 hκ, hδ.2⟩
+
 end RawPolygon
 
 end ComputationalGeometry
