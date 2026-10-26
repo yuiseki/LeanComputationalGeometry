@@ -2,8 +2,10 @@ import LeanComputationalGeometry.Point
 import LeanComputationalGeometry.Orientation
 import LeanComputationalGeometry.Segment
 import LeanComputationalGeometry.Triangle
+import LeanComputationalGeometry.TriangleCrossing
 import LeanComputationalGeometry.Polygon.Basic
 import LeanComputationalGeometry.Polygon.SignedArea
 import LeanComputationalGeometry.Polygon.Winding
 import LeanComputationalGeometry.Polygon.Region
 import LeanComputationalGeometry.Polygon.TriangleRegion
+import LeanComputationalGeometry.Polygon.Ear
