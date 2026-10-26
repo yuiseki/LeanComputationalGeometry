@@ -4,7 +4,7 @@ import Mathlib.Logic.Equiv.Fin.Rotate
 /-!
 # Polygons: raw rings and simple polygons
 
-Three levels are kept apart, and only the first two exist yet.
+Three levels are kept apart.
 
 1. Raw ring data, `RawPolygon`: `n` vertices `vertex : Fin n → Point2D`,
    joined cyclically, the edge from vertex `i` going to vertex `next i`
@@ -14,11 +14,15 @@ Three levels are kept apart, and only the first two exist yet.
 2. Simple polygons, `RawPolygon.IsSimple`: at least three vertices, no
    zero-length edge, consecutive edges meeting only at their shared vertex,
    and other edges disjoint. `SimplePolygon` is the subtype.
-3. Region semantics, the interior a simple polygon bounds, is not defined
-   here yet. It is the next step of the roadmap (winding number,
-   point-in-polygon), and nothing in this file presumes it.
+3. Region semantics, the region a simple polygon bounds, lives in
+   `Polygon/Winding.lean` and `Polygon/Region.lean`: winding numbers by
+   oriented ray crossings, the boundary, and the closed and open regions under
+   the nonzero rule (`SimplePolygon.toRegion`, `SimplePolygon.toOpenRegion`).
+   Nothing in this file presumes them.
 
-A nondegenerate triangle is a simple polygon (`Triangle.isSimple_toPolygon`).
+`RawPolygon.reverse` traverses a ring the other way, and its edges are the
+ring's edges reversed (`RawPolygon.reverse_edge`). A nondegenerate triangle is
+a simple polygon (`Triangle.isSimple_toPolygon`).
 -/
 
 namespace ComputationalGeometry
