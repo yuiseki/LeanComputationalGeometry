@@ -1,0 +1,436 @@
+import LeanComputationalGeometry.Polygon.Diagonal
+
+/-!
+# Two ears
+
+Every simple polygon with at least four vertices that winds `0` or `1` times
+has an ear (`IsSimple.exists_ear`), and indeed two ears whose triangles do not
+overlap (`IsSimple.exists_two_nonoverlapping_ears`). This is Meisters' Two
+Ears Theorem, for the ear test `IsEar` of this library: a convex vertex with
+no other vertex in the closed ear triangle. Collinear vertices are allowed
+throughout; no general position is assumed.
+
+1. A convex vertex: the vertex with the largest `x`, and among those the
+   largest `y`, turns left (`IsSimple.exists_convexVertex`). It cannot go
+   straight on, since both neighbours lie on the same side of it, and it
+   cannot turn right, since the sector on the left of the boundary there
+   would reach to the right of every vertex, where the winding number is `0`.
+2. A diagonal (`IsSimple.exists_diagonal`). If the convex vertex `v` is an ear,
+   the segment joining its neighbours is one (`IsEar.isDiagonal`). If not,
+   some other vertex lies in its closed ear triangle `u v w`; of those, the
+   one farthest from the line `u w` gives a diagonal from `v`
+   (`ConvexVertex.exists_isDiagonal`). The triangle cut off at `v` by the
+   parallel to `u w` just below a point of that segment holds no other vertex,
+   so an edge crossing the segment would have to enter and leave it through
+   its side on the parallel, which a segment cannot do.
+3. A diagonal cuts off a chain with fewer vertices (`Polygon/Diagonal.lean`),
+   simple and winding `0` or `1` times, whose open region lies in that of the
+   polygon. A diagonal of the chain gives, on its side away from the closing
+   segment, a diagonal of the polygon cutting off fewer steps. So by strong
+   induction a chain of two steps is reached, and its middle vertex is an ear
+   (`IsDiagonal.exists_ear`). Both sides of one diagonal give an ear each,
+   and the ear triangles lie in the disjoint open regions of the two sides.
+-/
+
+namespace ComputationalGeometry
+
+open Set Point2D Filter Topology
+
+namespace RawPolygon
+
+variable {P : RawPolygon}
+
+/-! ## A convex vertex -/
+
+/-- A vertex with the largest `x`, and among those the largest `y`. -/
+theorem exists_lex_max (h : 0 < P.n) : ∃ v, ∀ j, (P.vertex j).x ≤ (P.vertex v).x ∧
+    ((P.vertex j).x = (P.vertex v).x → (P.vertex j).y ≤ (P.vertex v).y) := by
+  have : Nonempty (Fin P.n) := ⟨⟨0, h⟩⟩
+  obtain ⟨i₀, -, hi₀⟩ := Finset.exists_max_image Finset.univ (fun j => (P.vertex j).x)
+    Finset.univ_nonempty
+  obtain ⟨v, hv, hvmax⟩ := Finset.exists_max_image
+    (Finset.univ.filter fun j => (P.vertex j).x = (P.vertex i₀).x) (fun j => (P.vertex j).y)
+    ⟨i₀, by simp⟩
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hv hvmax
+  exact ⟨v, fun j => ⟨by rw [hv]; exact hi₀ j (Finset.mem_univ _),
+    fun hj => hvmax j (hj.trans hv)⟩⟩
+
+theorem prev_ne_self (h3 : 3 ≤ P.n) (v : Fin P.n) : P.prev v ≠ v := by
+  intro e
+  apply P.iterate_next_ne v (k := 1) one_pos (by omega)
+  calc P.next v = P.next (P.prev v) := by rw [e]
+    _ = v := P.next_prev v
+
+theorem next_ne_self (h3 : 3 ≤ P.n) (v : Fin P.n) : P.next v ≠ v :=
+  P.iterate_next_ne v (k := 1) one_pos (by omega)
+
+/-- A simple polygon that winds `0` or `1` times turns left at some vertex:
+at the vertex with the largest `x`, and among those the largest `y`. -/
+theorem IsSimple.exists_convexVertex (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) :
+    ∃ i, P.ConvexVertex i := by
+  have h3 := hP.three_le
+  obtain ⟨v, hv⟩ := exists_lex_max (P := P) (by omega)
+  refine ⟨v, ?_⟩
+  have hu : P.prevVertex v ≠ P.vertex v := fun e => prev_ne_self h3 v (hP.vertex_injective e)
+  have hw : P.nextVertex v ≠ P.vertex v := fun e => next_ne_self h3 v (hP.vertex_injective e)
+  -- Coordinates relative to `v`.
+  set ax := (P.prevVertex v).x - (P.vertex v).x
+  set ay := (P.prevVertex v).y - (P.vertex v).y
+  set bx := (P.nextVertex v).x - (P.vertex v).x
+  set by' := (P.nextVertex v).y - (P.vertex v).y
+  have hax : ax ≤ 0 := by have := (hv (P.prev v)).1; simp only [ax, prevVertex]; linarith
+  have hbx : bx ≤ 0 := by have := (hv (P.next v)).1; simp only [bx, nextVertex]; linarith
+  have hay : ax = 0 → ay < 0 := by
+    intro h0
+    have h1 := (hv (P.prev v)).2 (by simp only [ax, prevVertex] at h0 ⊢; linarith)
+    rcases (show ay ≤ 0 by simp only [ay, prevVertex]; linarith).lt_or_eq with h | h
+    · exact h
+    · exact absurd (Point2D.ext_iff'.mpr ⟨by linarith, by linarith⟩) hu
+  have hby : bx = 0 → by' < 0 := by
+    intro h0
+    have h1 := (hv (P.next v)).2 (by simp only [bx, nextVertex] at h0 ⊢; linarith)
+    rcases (show by' ≤ 0 by simp only [by', nextVertex]; linarith).lt_or_eq with h | h
+    · exact h
+    · exact absurd (Point2D.ext_iff'.mpr ⟨by linarith, by linarith⟩) hw
+  have ho : orient (P.prevVertex v) (P.vertex v) (P.nextVertex v) = ay * bx - ax * by' := by
+    simp only [ax, ay, bx, by', orient_def]; ring
+  rcases lt_trichotomy 0 (orient (P.prevVertex v) (P.vertex v) (P.nextVertex v)) with h | h | h
+  · exact h
+  · -- Going straight on, one neighbour would be on the other side.
+    exfalso
+    have hd := hP.dot_pos_of_locallyDegenerate (i := v) h.symm
+    have hd' : ax * bx + ay * by' < 0 := by
+      simp only [ax, ay, bx, by', x_sub, y_sub] at hd ⊢; linarith
+    rw [ho] at h
+    rcases lt_trichotomy ay 0 with h₁ | h₁ | h₁
+    · have hb : 0 < by' := by nlinarith [mul_nonneg_of_nonpos_of_nonpos hax hbx]
+      have hb' : bx < 0 := lt_of_le_of_ne hbx (fun e => absurd (hby e) (not_lt.mpr hb.le))
+      nlinarith [mul_pos_of_neg_of_neg h₁ hb']
+    · rw [h₁, zero_mul, add_zero] at hd'; linarith [mul_nonneg_of_nonpos_of_nonpos hax hbx]
+    · have ha' : ax < 0 := lt_of_le_of_ne hax (fun e => absurd (hay e) (not_lt.mpr h₁.le))
+      have hb : by' < 0 := by nlinarith [mul_nonneg_of_nonpos_of_nonpos hax hbx]
+      nlinarith [mul_pos_of_neg_of_neg ha' hb]
+  · -- Turning right, the sector on the left reaches past every vertex.
+    exfalso
+    obtain ⟨L, -, hiff, -, hsec, -⟩ := hP.exists_side_values
+    have hL := hiff.mp hJ
+    obtain ⟨r, hr, hr0⟩ := ((hsec v).and self_mem_nhdsWithin).exists
+    have hr0 : (0 : ℝ) < r := hr0
+    set q := Point2D.mk ((P.vertex v).x + r / 2) (P.vertex v).y
+    have hq : q ∈ P.leftSector v r := by
+      simp only [leftSector, mem_ofPred_eq]
+      refine ⟨?_, ?_⟩
+      · refine lt_of_le_of_lt (dist_le_abs_add_abs q (P.vertex v)) ?_
+        simp only [q, Point2D.x_mk, Point2D.y_mk, add_sub_cancel_left, sub_self, abs_zero,
+          add_zero, abs_of_pos (half_pos hr0)]
+        linarith
+      · split_ifs with hc
+        · exact absurd hc (not_le.mpr h)
+        have h₁ : orient (P.prevVertex v) (P.vertex v) q = ay * (r / 2) := by
+          simp only [q, ay, orient_def, Point2D.x_mk, Point2D.y_mk]; ring
+        have h₂ : orient (P.vertex v) (P.nextVertex v) q = -(by' * (r / 2)) := by
+          simp only [q, by', orient_def, Point2D.x_mk, Point2D.y_mk]; ring
+        rw [h₁, h₂, ho] at *
+        by_contra hc
+        simp only [not_or, not_lt] at hc
+        have hay' : ay ≤ 0 := by nlinarith [hc.1]
+        have hby' : 0 ≤ by' := by nlinarith [hc.2]
+        nlinarith [mul_nonneg_of_nonpos_of_nonpos hay' hbx, mul_nonpos_of_nonpos_of_nonneg hax hby']
+    have h0 := P.windingNumber_eq_zero_of_right (p := q) fun j => by
+      simp only [q, Point2D.x_mk]; linarith [(hv j).1]
+    rw [hr q hq] at h0
+    omega
+
+/-! ## Diagonals at a convex vertex -/
+
+/-- Two different edges of a simple polygon meet only at a vertex they share. -/
+theorem IsSimple.eq_of_mem_edge_inter (hP : P.IsSimple) {j l : Fin P.n} (hjl : j ≠ l)
+    {y : Point2D} (hj : y ∈ (P.edge j).toSet) (hl : y ∈ (P.edge l).toSet) :
+    (P.next j = l ∧ y = P.vertex l) ∨ (P.next l = j ∧ y = P.vertex j) := by
+  by_cases h₁ : P.next j = l
+  · subst h₁
+    have := (hP.adjacent_inter j).subset ⟨hj, hl⟩
+    exact Or.inl ⟨rfl, this⟩
+  by_cases h₂ : P.next l = j
+  · subst h₂
+    have := (hP.adjacent_inter l).subset ⟨hl, hj⟩
+    exact Or.inr ⟨rfl, this⟩
+  exact absurd (hP.nonadjacent_disjoint j l hjl h₁ h₂) (Set.not_disjoint_iff.mpr ⟨y, hj, hl⟩)
+
+/-- The diagonal of an ear runs in the open region of a simple polygon that
+winds `0` or `1` times. -/
+theorem IsEar.openSegment_subset_openRegion (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n}
+    (h : P.IsEar i) (hJ : P.WindsZeroOrOne) :
+    openSegment ℝ (P.prevVertex i) (P.nextVertex i) ⊆ P.openRegion := by
+  intro x hx
+  have hb : ¬ P.OnBoundary x := fun hb =>
+    Set.eq_empty_iff_forall_notMem.mp (h.earDiagonal_relInterior_inter_boundary hP h4) x ⟨hx, hb⟩
+  refine ⟨hb, ?_⟩
+  obtain ⟨α, β, hα, hβ, hαβ, rfl⟩ := hx
+  obtain rfl : α = 1 - β := by linarith
+  set A := P.prevVertex i
+  set B := P.vertex i
+  set C := P.nextVertex i
+  have hD : 0 < orient A B C := h.convex
+  set x := (1 - β) • A + β • C
+  have hγ : Tendsto (fun ε : ℝ => x + ε • (B - x)) (𝓝[>] 0) (𝓝 x) := by
+    have : Continuous fun ε : ℝ => x + ε • (B - x) := by fun_prop
+    simpa using (this.tendsto 0).mono_left nhdsWithin_le_nhds
+  -- Moving from the diagonal towards the vertex enters the ear triangle.
+  have hin : ∀ᶠ ε in 𝓝[>] (0 : ℝ), x + ε • (B - x) ∈ interior (P.earTriangle i).toSet := by
+    filter_upwards [Ioo_mem_nhdsGT one_pos] with ε hε
+    rw [Triangle.mem_interior_toSet_iff h.isCCW]
+    have e₁ : orient A B (x + ε • (B - x)) = (1 - ε) * β * orient A B C := by
+      simp only [x, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+    have e₂ : orient B C (x + ε • (B - x)) = (1 - ε) * (1 - β) * orient A B C := by
+      simp only [x, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+    have e₃ : orient C A (x + ε • (B - x)) = ε * orient A B C := by
+      simp only [x, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+    have h1ε : 0 < 1 - ε := by linarith [hε.2]
+    have h1β : 0 < 1 - β := by linarith
+    refine ⟨?_, ?_, ?_⟩
+    · show 0 < orient A B _; rw [e₁]; positivity
+    · show 0 < orient B C _; rw [e₂]; positivity
+    · show 0 < orient C A _; rw [e₃]; exact mul_pos hε.1 hD
+  obtain ⟨ε, h₁, h₂⟩ := ((hγ.eventually (P.windingNumber_eventually_eq hb)).and hin).exists
+  rw [← h₁, h.windingNumber_eq_one hP h4 hJ h₂]
+  exact one_ne_zero
+
+/-- The diagonal of an ear is a diagonal. -/
+theorem IsEar.isDiagonal (hP : P.IsSimple) (h4 : 4 ≤ P.n) {i : Fin P.n} (h : P.IsEar i)
+    (hJ : P.WindsZeroOrOne) : P.IsDiagonal (P.prev i) 2 where
+  two_le := le_rfl
+  add_two_le := h4
+  openSegment_subset := by
+    show openSegment ℝ (P.vertex (P.prev i)) (P.vertex (P.next (P.next (P.prev i)))) ⊆ _
+    rw [next_prev]
+    exact h.openSegment_subset_openRegion hP h4 hJ
+
+/-- `n - 1` steps on is the previous vertex. -/
+theorem iterate_next_pred (h : 0 < P.n) (v : Fin P.n) : P.next^[P.n - 1] v = P.prev v := by
+  apply P.next_injective
+  rw [next_prev, ← Function.iterate_succ_apply' P.next, Nat.succ_eq_add_one,
+    Nat.sub_add_cancel h, iterate_next_n]
+
+/-- At a convex vertex that is not an ear, a diagonal starts: to the vertex in
+the closed ear triangle farthest from the line through the two neighbours. -/
+theorem ConvexVertex.exists_isDiagonal (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) (h4 : 4 ≤ P.n)
+    {v : Fin P.n} (hv : P.ConvexVertex v) (hne : ¬ P.IsEar v) : ∃ k, P.IsDiagonal v k := by
+  classical
+  set u := P.prevVertex v with hu
+  set B := P.vertex v with hB
+  set w := P.nextVertex v with hw
+  set D := orient u B w
+  have hD : 0 < D := hv
+  set T := P.earTriangle v
+  have hT : T.IsCCW := hv
+  -- The vertices other than `v` and its neighbours in the closed ear triangle.
+  set C := Finset.univ.filter fun j =>
+    j ≠ P.prev v ∧ j ≠ v ∧ j ≠ P.next v ∧ P.vertex j ∈ T.toSet
+  have hC : C.Nonempty := by
+    by_contra hC
+    apply hne
+    refine ⟨hv, fun j h₁ h₂ h₃ hj => hC ⟨j, ?_⟩⟩
+    simp only [C, Finset.mem_filter, Finset.mem_univ, true_and]
+    exact ⟨h₁, h₂, h₃, hj⟩
+  obtain ⟨z, hzC, hzmax⟩ := Finset.exists_max_image C (fun j => orient w u (P.vertex j)) hC
+  simp only [C, Finset.mem_filter, Finset.mem_univ, true_and] at hzC hzmax
+  obtain ⟨hz₁, hz₂, hz₃, hzT⟩ := hzC
+  set Z := P.vertex z
+  have hzT' := (Triangle.mem_toSet_iff_containsTest hT Z).mp hzT
+  obtain ⟨hzα, hzβ, hzg⟩ := hzT'
+  change 0 ≤ orient u B Z at hzα
+  change 0 ≤ orient B w Z at hzβ
+  change 0 ≤ orient w u Z at hzg
+  -- `z` is off the two edges at `v`.
+  have hα : 0 < orient u B Z := by
+    refine lt_of_le_of_ne hzα fun e => ?_
+    have hs : Z ∈ segment ℝ u B :=
+      (Triangle.mem_segment_iff_of_isCCW hT Z).mpr ⟨e.symm, hzβ, hzg⟩
+    have hs' : Z ∈ (P.edge (P.prev v)).toSet := by
+      rw [edge_toSet, next_prev]; exact hs
+    rcases hP.vertex_mem_edge hs' with e' | e'
+    · exact hz₁ e'.symm
+    · rw [next_prev] at e'; exact hz₂ e'.symm
+  have hβ : 0 < orient B w Z := by
+    refine lt_of_le_of_ne hzβ fun e => ?_
+    have hs : Z ∈ segment ℝ B w :=
+      (Triangle.mem_segment_iff_of_isCCW (T := T.rotate) (Triangle.isCCW_rotate.mpr hT) Z).mpr
+        ⟨e.symm, hzg, hzα⟩
+    have hs' : Z ∈ (P.edge v).toSet := by rw [edge_toSet]; exact hs
+    rcases hP.vertex_mem_edge hs' with e' | e'
+    · exact hz₂ e'.symm
+    · exact hz₃ e'.symm
+  have hsum := T.orient_sum Z
+  change orient B w Z + orient w u Z + orient u B Z = D at hsum
+  have hgD : orient w u Z < D := by linarith
+  -- The index of `z`.
+  obtain ⟨k, hk, hkz⟩ := exists_iterate_next_eq v z
+  have hk2 : 2 ≤ k := by
+    rcases Nat.lt_or_ge k 2 with h | h
+    · interval_cases k
+      · exact absurd hkz.symm hz₂
+      · exact absurd hkz.symm hz₃
+    · exact h
+  have hkn : k + 2 ≤ P.n := by
+    by_contra h
+    have : k = P.n - 1 := by omega
+    rw [this, iterate_next_pred (by omega)] at hkz
+    exact hz₁ hkz.symm
+  refine ⟨k, hk2, hkn, ?_⟩
+  rw [hkz]
+  change openSegment ℝ B Z ⊆ P.openRegion
+  -- Along the segment from `v` to `z`.
+  have hpt : ∀ s : ℝ, orient u B ((1 - s) • B + s • Z) = s * orient u B Z ∧
+      orient B w ((1 - s) • B + s • Z) = s * orient B w Z ∧
+      orient w u ((1 - s) • B + s • Z) = (1 - s) * D + s * orient w u Z := by
+    intro s
+    refine ⟨?_, ?_, ?_⟩ <;> simp only [D, orient_def, x_add, y_add, x_smul, y_smul] <;> ring
+  -- The open segment avoids the boundary.
+  have hoff : ∀ x ∈ openSegment ℝ B Z, ¬ P.OnBoundary x := by
+    rintro x ⟨a', s, ha', hs, has, rfl⟩ ⟨j, hj⟩
+    obtain rfl : a' = 1 - s := by linarith
+    obtain ⟨hxα, hxβ, hxg⟩ := hpt s
+    have hs1 : s < 1 := by linarith
+    by_cases hj₁ : j = P.prev v
+    · rw [hj₁] at hj
+      have := Segment.orient_eq_zero_of_mem _ hj
+      simp only [edge, next_prev] at this
+      change orient u B _ = 0 at this
+      rw [hxα] at this
+      exact (mul_pos hs hα).ne' this
+    by_cases hj₂ : j = v
+    · rw [hj₂] at hj
+      have := Segment.orient_eq_zero_of_mem _ hj
+      simp only [edge] at this
+      change orient B w _ = 0 at this
+      rw [hxβ] at this
+      exact (mul_pos hs hβ).ne' this
+    -- The small triangle cut off at `v` by a parallel to `u w`.
+    set x := (1 - s) • B + s • Z
+    set c := (orient w u Z + orient w u x) / 2
+    have hgx : orient w u Z < orient w u x := by rw [hxg]; nlinarith
+    have hc0 : 0 < c := by simp only [c]; linarith
+    have hcx : c < orient w u x := by simp only [c]; linarith
+    have hcZ : orient w u Z < c := by simp only [c]; linarith
+    have hxD : orient w u x < D := by rw [hxg]; nlinarith
+    set l := 1 - c / D
+    have hcD : (1 - l) * D = c := by simp only [l]; field_simp; ring
+    have hl0 : 0 < l := by
+      simp only [l]; rw [sub_pos, div_lt_one hD]; linarith
+    have hl1 : l < 1 := by simp only [l]; have := div_pos hc0 hD; linarith
+    set uc := B + l • (u - B)
+    set wc := B + l • (w - B)
+    set T' : Triangle := ⟨uc, B, wc⟩
+    have i₁ : ∀ p, orient uc B p = l * orient u B p := fun p => by
+      simp only [uc, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+    have i₂ : ∀ p, orient B wc p = l * orient B w p := fun p => by
+      simp only [wc, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+    have i₃ : ∀ p, orient wc uc p = l * (orient w u p - (1 - l) * D) := fun p => by
+      simp only [uc, wc, D, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+    have hT' : T'.IsCCW := by
+      show 0 < orient uc B wc
+      rw [i₁]
+      have : orient u B wc = l * D := by
+        simp only [wc, D, orient_def, x_add, y_add, x_smul, y_smul, x_sub, y_sub]; ring
+      rw [this]; positivity
+    have memT' : ∀ p, p ∈ T'.toSet ↔
+        0 ≤ orient u B p ∧ 0 ≤ orient B w p ∧ c ≤ orient w u p := by
+      intro p
+      rw [Triangle.mem_toSet_iff_containsTest hT']
+      show 0 ≤ orient uc B p ∧ 0 ≤ orient B wc p ∧ 0 ≤ orient wc uc p ↔ _
+      rw [i₁, i₂, i₃, hcD, mul_nonneg_iff_of_pos_left hl0, mul_nonneg_iff_of_pos_left hl0,
+        mul_nonneg_iff_of_pos_left hl0, sub_nonneg]
+    have hxT' : x ∈ T'.toSet := (memT' x).mpr ⟨by rw [hxα]; positivity,
+      by rw [hxβ]; positivity, hcx.le⟩
+    -- No vertex but `v` is in the small triangle.
+    have hgu : orient w u u = 0 := by simp
+    have hgw : orient w u w = 0 := by simp
+    have hnot : ∀ m, m ≠ v → P.vertex m ∉ T'.toSet := by
+      intro m hm hmT
+      obtain ⟨h₁, h₂, h₃⟩ := (memT' _).mp hmT
+      by_cases hm₁ : m = P.prev v
+      · subst hm₁; change c ≤ orient w u u at h₃; rw [hgu] at h₃; linarith
+      by_cases hm₃ : m = P.next v
+      · subst hm₃; change c ≤ orient w u w at h₃; rw [hgw] at h₃; linarith
+      have hmT : P.vertex m ∈ T.toSet :=
+        (Triangle.mem_toSet_iff_containsTest hT _).mpr ⟨h₁, h₂, by
+          show 0 ≤ orient w u _; linarith⟩
+      have := hzmax m ⟨hm₁, hm, hm₃, hmT⟩
+      linarith
+    have hnext : P.next j ≠ v := fun e => hj₁ (by rw [← e, prev_next])
+    have hsub₁ : segment ℝ uc B ⊆ segment ℝ u B := by
+      refine (convex_segment u B).segment_subset ?_ (right_mem_segment ℝ u B)
+      refine ⟨l, 1 - l, hl0.le, by linarith, by ring, ?_⟩
+      simp only [uc]; apply Point2D.ext <;> simp only [x_add, y_add, x_smul, y_smul, x_sub, y_sub] <;>
+        ring
+    have hsub₂ : segment ℝ B wc ⊆ segment ℝ B w := by
+      refine (convex_segment B w).segment_subset (left_mem_segment ℝ B w) ?_
+      refine ⟨1 - l, l, by linarith, hl0.le, by ring, ?_⟩
+      simp only [wc]; apply Point2D.ext <;> simp only [x_add, y_add, x_smul, y_smul, x_sub, y_sub] <;>
+        ring
+    have hdisj := Triangle.disjoint_toSet_of_avoid hT' (u := P.vertex j) (w := P.vertex (P.next j))
+      (hnot j hj₂) (hnot _ hnext)
+      (by
+        rw [Set.disjoint_left]
+        intro y hy₁ hy₂
+        have hyT : y ∈ T'.toSet := Triangle.segment_subset_toSet (by simp [T']) (by simp [T']) hy₂
+        have hy₂' : y ∈ (P.edge (P.prev v)).toSet := by
+          rw [edge_toSet, next_prev]; exact hsub₁ hy₂
+        rcases hP.eq_of_mem_edge_inter hj₁ hy₁ hy₂' with ⟨-, rfl⟩ | ⟨e, -⟩
+        · have := ((memT' _).mp hyT).2.2
+          change c ≤ orient w u u at this
+          rw [hgu] at this
+          linarith
+        · rw [next_prev] at e; exact hj₂ e.symm)
+      (by
+        rw [Set.disjoint_left]
+        intro y hy₁ hy₂
+        have hyT : y ∈ T'.toSet := Triangle.segment_subset_toSet (by simp [T']) (by simp [T']) hy₂
+        have hy₂' : y ∈ (P.edge v).toSet := by rw [edge_toSet]; exact hsub₂ hy₂
+        rcases hP.eq_of_mem_edge_inter hj₂ hy₁ hy₂' with ⟨e, -⟩ | ⟨e, rfl⟩
+        · exact hj₁ (by rw [← e, prev_next])
+        · have := ((memT' _).mp hyT).2.2
+          rw [← e] at this
+          change c ≤ orient w u w at this
+          rw [hgw] at this
+          linarith)
+    exact Set.disjoint_left.mp hdisj hj hxT'
+  -- Near `v` the segment is in the sector on the left, where the winding number is `1`.
+  obtain ⟨L, -, hiff, -, hsec, -⟩ := hP.exists_side_values
+  have hL := hiff.mp hJ
+  obtain ⟨r, hr, hr0⟩ := ((hsec v).and self_mem_nhdsWithin).exists
+  have hr0 : (0 : ℝ) < r := hr0
+  have hγ : Tendsto (fun t : ℝ => (1 - t) • B + t • Z) (𝓝[>] 0) (𝓝 B) := by
+    have : Continuous fun t : ℝ => (1 - t) • B + t • Z := by fun_prop
+    simpa using (this.tendsto 0).mono_left nhdsWithin_le_nhds
+  obtain ⟨t, ht₁, ht₃⟩ := ((hγ.eventually (Metric.ball_mem_nhds B hr0)).and
+    ((Ioo_mem_nhdsGT one_pos))).exists
+  have hq : (1 - t) • B + t • Z ∈ P.leftSector v r := by
+    simp only [leftSector, mem_ofPred_eq]
+    refine ⟨Metric.mem_ball.mp ht₁, ?_⟩
+    split_ifs with hc
+    swap; · exact absurd hD.le hc
+    obtain ⟨e₁, e₂, -⟩ := hpt t
+    exact ⟨by rw [e₁]; exact mul_pos ht₃.1 hα, by rw [e₂]; exact mul_pos ht₃.1 hβ⟩
+  have hqseg : (1 - t) • B + t • Z ∈ openSegment ℝ B Z :=
+    ⟨1 - t, t, by linarith [ht₃.2], ht₃.1, by ring, rfl⟩
+  intro x hx
+  refine ⟨hoff x hx, ?_⟩
+  rw [P.windingNumber_eq_of_isPreconnected (convex_openSegment B Z).isPreconnected hoff hx hqseg,
+    hr _ hq, hL]
+  exact one_ne_zero
+
+/-- A simple polygon with at least four vertices that winds `0` or `1` times
+has a diagonal. -/
+theorem IsSimple.exists_diagonal (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) (h4 : 4 ≤ P.n) :
+    ∃ i k, P.IsDiagonal i k := by
+  obtain ⟨v, hv⟩ := hP.exists_convexVertex hJ
+  by_cases he : P.IsEar v
+  · exact ⟨_, _, he.isDiagonal hP h4 hJ⟩
+  · obtain ⟨k, hk⟩ := hv.exists_isDiagonal hP hJ h4 he
+    exact ⟨v, k, hk⟩
+
+end RawPolygon
+
+end ComputationalGeometry
