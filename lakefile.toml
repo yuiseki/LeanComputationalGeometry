@@ -1,0 +1,12 @@
+name = "lean-computational-geometry"
+version = "0.1.0"
+defaultTargets = ["LeanComputationalGeometry"]
+
+[[lean_lib]]
+name = "LeanComputationalGeometry"
+globs = ["LeanComputationalGeometry.*"]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.34.0"
