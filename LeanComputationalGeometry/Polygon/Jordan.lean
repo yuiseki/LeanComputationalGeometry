@@ -794,9 +794,10 @@ theorem IsSimple.exists_edge_value (hP : P.IsSimple) (e : Fin P.n) :
     exact hconst z hz₁
 
 /-- Beside every edge of a simple polygon, on its left, the winding number
-takes one and the same value. -/
+takes one and the same value, also in the small sectors at the vertices. -/
 theorem IsSimple.exists_left_value (hP : P.IsSimple) :
-    ∃ L : ℤ, ∀ e, ∀ᶠ h in 𝓝[>] (0 : ℝ), ∀ q ∈ P.thinLeft e h, P.windingNumber q = L := by
+    ∃ L : ℤ, ∀ e, (∀ᶠ h in 𝓝[>] (0 : ℝ), ∀ q ∈ P.thinLeft e h, P.windingNumber q = L) ∧
+      ∀ᶠ r in 𝓝[>] (0 : ℝ), ∀ q ∈ P.leftSector e r, P.windingNumber q = L := by
   choose c hthin hstart hend hne using hP.exists_edge_value
   have hstep : ∀ e, c (P.next e) = c e := by
     intro e
@@ -811,7 +812,7 @@ theorem IsSimple.exists_left_value (hP : P.IsSimple) :
     | zero => rfl
     | succ k ih => rw [Function.iterate_succ_apply', hstep, ih]
   rw [← this]
-  exact hthin e
+  exact ⟨hthin e, hstart e⟩
 
 /-- Three points on a line through a fourth, other point: the line of the
 first two goes through the fourth. -/
@@ -996,11 +997,18 @@ theorem eventually_mem_thinLeft_reverse (f : Fin P.n) {h : ℝ} (hh : 0 < h)
   filter_upwards [key] with q hq hneg
   exact hq (by rw [orient_swap₁₂]; linarith)
 
-/-- Off its boundary, a simple polygon winds either `0` or `1` times around
-every point, or `0` or `-1` times. -/
-theorem IsSimple.windingNumber_cases (hP : P.IsSimple) :
-    (∀ p, ¬ P.OnBoundary p → P.windingNumber p = 0 ∨ P.windingNumber p = 1) ∨
-      (∀ p, ¬ P.OnBoundary p → P.windingNumber p = 0 ∨ P.windingNumber p = -1) := by
+/-- The winding numbers of a simple polygon, seen locally. There is one value
+`L`, `0` or `1`, taken on the left of every edge and in the small sectors at
+the vertices; on the right of every edge the value is `L - 1`; and every point
+off the boundary sees one of the two. The polygon winds `0` or `1` times
+exactly when `L = 1`. -/
+theorem IsSimple.exists_side_values (hP : P.IsSimple) :
+    ∃ L : ℤ, (L = 0 ∨ L = 1) ∧ (P.WindsZeroOrOne ↔ L = 1) ∧
+      (∀ p, ¬ P.OnBoundary p → P.windingNumber p = L ∨ P.windingNumber p = L - 1) ∧
+      (∀ e, ∀ᶠ r in 𝓝[>] (0 : ℝ), ∀ q ∈ P.leftSector e r, P.windingNumber q = L) ∧
+      ∀ f, ∀ q₀ ∈ openSegment ℝ (P.vertex f) (P.vertex (P.next f)), ∀ᶠ q in 𝓝 q₀,
+        (0 < orient (P.vertex f) (P.vertex (P.next f)) q → P.windingNumber q = L) ∧
+        (orient (P.vertex f) (P.vertex (P.next f)) q < 0 → P.windingNumber q = L - 1) := by
   obtain ⟨L, hL⟩ := hP.exists_left_value
   obtain ⟨L', hL'⟩ := hP.reverse.exists_left_value
   -- On the right of every edge the winding number is `-L'`.
@@ -1008,7 +1016,7 @@ theorem IsSimple.windingNumber_cases (hP : P.IsSimple) :
       ∀ q ∈ P.reverse.thinLeft (Fin.rev (P.next f) : Fin P.reverse.n) h,
         P.windingNumber q = -L' := by
     intro f
-    filter_upwards [hL' (Fin.rev (P.next f) : Fin P.reverse.n)] with h hh q hq
+    filter_upwards [(hL' (Fin.rev (P.next f) : Fin P.reverse.n)).1] with h hh q hq
     have := hh q hq
     rw [windingNumber_reverse] at this
     omega
@@ -1019,7 +1027,7 @@ theorem IsSimple.windingNumber_cases (hP : P.IsSimple) :
     have hvv : P.vertex f ≠ P.vertex (P.next f) := hP.edge_nondegenerate f
     rcases hside with hside | hside
     · left
-      obtain ⟨h, hh, hpos⟩ := ((hL f).and self_mem_nhdsWithin).exists
+      obtain ⟨h, hh, hpos⟩ := ((hL f).1.and self_mem_nhdsWithin).exists
       have hmem := hγ.eventually (eventually_mem_thinLeft f hpos hvv hq₀)
       obtain ⟨δ, ⟨h₁, h₂⟩, h₃⟩ := (hside.and hmem).exists
       rw [← h₂]; exact hh _ (h₃ h₁)
@@ -1029,13 +1037,13 @@ theorem IsSimple.windingNumber_cases (hP : P.IsSimple) :
       obtain ⟨δ, ⟨h₁, h₂⟩, h₃⟩ := (hside.and hmem).exists
       rw [← h₂]; exact hh _ (h₃ h₁)
   -- Across a non-horizontal edge, from right to left, the winding number goes up by one.
+  obtain ⟨e, hey⟩ := hP.exists_edge_y_ne
+  have hm : (1 / 2 : ℝ) • P.vertex e + (1 / 2 : ℝ) • P.vertex (P.next e) ∈
+      openSegment ℝ (P.vertex e) (P.vertex (P.next e)) :=
+    ⟨1 / 2, 1 / 2, by norm_num, by norm_num, by norm_num, rfl⟩
   have hstep : L = -L' + 1 := by
-    obtain ⟨e, hey⟩ := hP.exists_edge_y_ne
     have hvv : P.vertex e ≠ P.vertex (P.next e) := hP.edge_nondegenerate e
-    have hm : (1 / 2 : ℝ) • P.vertex e + (1 / 2 : ℝ) • P.vertex (P.next e) ∈
-        openSegment ℝ (P.vertex e) (P.vertex (P.next e)) :=
-      ⟨1 / 2, 1 / 2, by norm_num, by norm_num, by norm_num, rfl⟩
-    obtain ⟨h, hh, hpos⟩ := ((hL e).and self_mem_nhdsWithin).exists
+    obtain ⟨h, hh, hpos⟩ := ((hL e).1.and self_mem_nhdsWithin).exists
     obtain ⟨h', hh', hpos'⟩ := ((hR e).and self_mem_nhdsWithin).exists
     obtain ⟨q, q', hq, hq', -, -, hqq⟩ := hP.exists_sides₂ e rfl rfl hey
       (eventually_mem_thinLeft e hpos hvv hm) (eventually_mem_thinLeft_reverse e hpos' hvv hm)
@@ -1064,17 +1072,32 @@ theorem IsSimple.windingNumber_cases (hP : P.IsSimple) :
     rcases hval p₀ hp₀ with h | h
     · left; rw [← h, hw]
     · right; rw [← h, hw]
-  rcases hzero with h0 | h0
-  · right
-    intro p hp
-    rcases hval p hp with h | h
-    · left; rw [h, h0]
-    · right; rw [h]; omega
-  · left
-    intro p hp
-    rcases hval p hp with h | h
-    · right; rw [h]; omega
-    · left; rw [h, h0]
+  have hL01 : L = 0 ∨ L = 1 := by omega
+  refine ⟨L, hL01, ⟨fun hJ => ?_, fun h1 p hp => ?_⟩, fun p hp => ?_, fun e => (hL e).2,
+    fun f q₀ hq₀ => ?_⟩
+  · obtain ⟨q, q', -, -, hq, hq', hqq⟩ := hP.exists_sides₂ e rfl rfl hey (S := univ)
+      (S' := univ) (Eventually.of_forall fun _ _ => trivial)
+      (Eventually.of_forall fun _ _ => trivial)
+    rcases hval q hq with e₁ | e₁ <;> rcases hval q' hq' with e₂ | e₂ <;>
+      rcases hJ q hq with e₃ | e₃ <;> rcases hJ q' hq' with e₄ | e₄ <;> omega
+  · rcases hval p hp with e₁ | e₁ <;> omega
+  · rcases hval p hp with e₁ | e₁ <;> [left; right] <;> omega
+  · have hvv : P.vertex f ≠ P.vertex (P.next f) := hP.edge_nondegenerate f
+    obtain ⟨h, hh, hpos⟩ := ((hL f).1.and self_mem_nhdsWithin).exists
+    obtain ⟨h', hh', hpos'⟩ := ((hR f).and self_mem_nhdsWithin).exists
+    filter_upwards [eventually_mem_thinLeft f hpos hvv hq₀,
+      eventually_mem_thinLeft_reverse f hpos' hvv hq₀] with q h₁ h₂
+    exact ⟨fun ho => hh q (h₁ ho), fun ho => by rw [hh' q (h₂ ho)]; omega⟩
+
+/-- Off its boundary, a simple polygon winds either `0` or `1` times around
+every point, or `0` or `-1` times. -/
+theorem IsSimple.windingNumber_cases (hP : P.IsSimple) :
+    (∀ p, ¬ P.OnBoundary p → P.windingNumber p = 0 ∨ P.windingNumber p = 1) ∨
+      (∀ p, ¬ P.OnBoundary p → P.windingNumber p = 0 ∨ P.windingNumber p = -1) := by
+  obtain ⟨L, hL01, -, hval, -⟩ := hP.exists_side_values
+  rcases hL01 with rfl | rfl
+  · right; intro p hp; rcases hval p hp with e | e <;> omega
+  · left; intro p hp; rcases hval p hp with e | e <;> omega
 
 /-- Off its boundary, a simple polygon winds at most once around any point. -/
 theorem IsSimple.abs_windingNumber_le_one (hP : P.IsSimple) {p : Point2D} (hp : ¬ P.OnBoundary p) :
