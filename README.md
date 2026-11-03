@@ -63,6 +63,8 @@ from either sibling library is a point here without conversion.
 | `RawPolygon.chain P i k` | the `k + 1` vertices from vertex `i` on, `k` edges of `P`, closed up by the segment back to vertex `i` |
 | `RawPolygon.IsDiagonal P i k` | `2 ≤ k`, `k + 2 ≤ n`, and the open segment from vertex `i` to the vertex `k` steps on lies in `openRegion P` |
 | `RawPolygon.earClip P` | a list of triangles: with `4 ≤ n` and an ear, that ear's triangle followed by `earClip` of the ring without it; with `n = 3`, the triangle itself; otherwise none |
+| `RawPolygon.idxTriangle P t` | the triangle with corners the vertices at the indices `t = (a, b, c)` |
+| `RawPolygon.IsTriangulation P ts` | every index triangle of `ts` counterclockwise, and for all indices `u`, `v` the sides of `ts` from `u` to `v` minus those from `v` to `u` equal the same count for the polygon's edges |
 | `SimplePolygon.reverse P`, `SimplePolygon.orientCCW P` | the polygon traversed the other way; the polygon traversed counterclockwise (itself, or reversed if clockwise) |
 
 Polygons are kept at three levels:
@@ -185,8 +187,10 @@ case. A clockwise triangle is handled through its reverse.
 
 For general simple polygons, that `toRegion` is the closure of `toOpenRegion`
 and `toOpenRegion` the interior of `toRegion` is the topological half of the
-Jordan curve theorem for polygons, not proved here. Its winding-number half
-is (next section).
+Jordan curve theorem for polygons. The first is proved, through ear clipping,
+for simple polygons winding `0` or `1` times (`IsSimple.closure_openRegion`);
+the second, and the two components, are not. The winding-number half is
+proved (next section).
 
 ### Winding numbers of simple polygons
 
@@ -397,6 +401,8 @@ and the recursion runs down to a triangle:
 | Their signed areas add up to the polygon's | simple, `WindsZeroOrOne` | `IsSimple.sum_signedArea2_earClip` |
 | The closed triangles cover the closed region exactly | simple, `WindsZeroOrOne` | `IsSimple.mem_region_iff_earClip` |
 | Their interiors lie in the open region and pairwise do not overlap | simple, `WindsZeroOrOne` | `IsSimple.interior_subset_openRegion_of_mem_earClip`, `IsSimple.pairwise_disjoint_earClip` |
+| The corners of the triangles are vertices of the ring | none | `mem_range_of_mem_earClip` |
+| The closed region is the closure of the open region | simple, `WindsZeroOrOne` | `IsSimple.closure_openRegion` |
 | The same for a `SimplePolygon`, and for any simple polygon after `orientCCW`, which keeps its regions | simple | `SimplePolygon.length_earClip` and the rest, `SimplePolygon.isCCW_orientCCW`, `SimplePolygon.toRegion_orientCCW`, `SimplePolygon.mem_toRegion_iff_earClip_orientCCW` |
 
 All of these are proved together by strong induction on the number of vertices
@@ -409,8 +415,42 @@ polygon's: off its boundary, the smaller ring winds `0` times around the
 points of the ear triangle, so its open region misses the closed ear
 triangle, where the two winding numbers differ.
 
-The triangles are ear triangles, so their corners are vertices of the input;
-this is by construction and not stated as a theorem yet.
+The closure statement is part of the topological half of the polygonal Jordan
+theorem: each closed triangle is the closure of its interior, which lies in
+the open region.
+
+### Checking a triangulation
+
+An external triangulator (Earcut or any other) returns triangles as triples of
+vertex indices. `IsTriangulation P ts` checks such a list `ts` against `P` in
+two parts: every triangle turns left (a sign test on coordinates), and the
+directed sides of the triangles cancel in pairs except for the polygon's
+edges (a condition on indices alone, decided by `decide`). Neither part
+mentions the regions, yet for a simple polygon they determine them:
+
+| Result | Assumptions | Theorem |
+| --- | --- | --- |
+| A sum over directed edges, of a function changing sign with the direction, is the same over the triangles' sides as over the polygon's edges | `IsTriangulation` | `IsTriangulation.sum_sides_eq` |
+| The triangles' winding numbers and signed areas add up to the polygon's | `IsTriangulation` | `IsTriangulation.windingNumber_eq_sum`, `IsTriangulation.signedArea2_eq_sum` |
+| Off the lines through two vertices, a dense open set, the winding number counts the triangles around the point | `IsTriangulation` | `dense_offLines`, `isOpen_offLines`, `IsTriangulation.windingNumber_eq_count` |
+| The polygon is counterclockwise | `IsTriangulation`, `3 ≤ n` | `IsTriangulation.polygon_isCCW` |
+| The triangles' interiors pairwise do not overlap | `IsTriangulation`, simple | `IsTriangulation.pairwise_disjoint` |
+| The closed triangles cover the closed region exactly | `IsTriangulation`, simple | `IsTriangulation.mem_region_iff` |
+
+The internal sides cancel because each is crossed once in each direction, so
+in any edge sum of an antisymmetric function they drop out; the winding
+number and the shoelace sum are such sums. Off the lines through two
+vertices, a counterclockwise triangle winds once around the points inside it
+and not at all around the others, so there the polygon's winding number,
+which is at most `1` for a simple polygon, is the number of triangles around
+the point. Two overlapping interiors would share such a point and count `2`.
+The open region minus the lines is covered, so its closure, the closed
+region, is too; and each triangle's interior, minus the lines, is in the
+open region, so the closed triangle is in the closed region.
+
+The polygon itself must be known simple, which the check does not decide.
+That the number of triangles is `n - 2`, and that every simple polygon has a
+list that passes the check (ear clipping's, as indices), are not proved yet.
 
 ### Examples
 
@@ -443,7 +483,11 @@ square into two triangles of total signed double area `2` and the comb into
 seven covering its region without overlapping, shows that the clockwise L does
 not wind `0` or `1` times and cuts it into four triangles after `orientCCW`,
 and shows `earClip` stopping at once, with no triangles, on four collinear
-points.
+points. `LeanComputationalGeometry/Examples/Certificate.lean` checks index
+triangulations: the square cut along either diagonal, and the comb cut into
+its four tooth tips and a fan of three triangles from the origin through its
+three collinear vertices; two wrong lists for the square, one with
+overlapping triangles and one repeating a triangle, are rejected by `decide`.
 
 ### On LeanGeospatial's shoelace
 
@@ -488,14 +532,17 @@ Mathlib. It does not check:
 | `n - 2` triangles | done |
 | triangulation correctness | done: counterclockwise triangles covering the closed region, interiors pairwise disjoint and in the open region, areas adding up |
 | a simple polygon has a nonzero shoelace sum, so is counterclockwise or clockwise | done, through ear clipping |
-| triangle corners as input vertex indices; a certificate checker for external triangulations | next |
+| triangle corners are input vertices | done |
+| a certificate checker for external triangulations | done: `IsTriangulation`, sound for simple polygons |
+| completeness of the checker (ear clipping's output passes), `n - 2` for any accepted list | next |
 | polygons with holes | later |
 | clipping | later |
 | convex hull | later |
 
 The Jordan curve theorem for general continuous curves is not attempted, nor
-the topological half of the polygonal one (two components, the region the
-closure of the open region).
+most of the topological half of the polygonal one (two components, the open
+region the interior of the closed one); that the closed region is the
+closure of the open region is proved (`IsSimple.closure_openRegion`).
 
 Ear clipping has its shape:
 
@@ -516,8 +563,8 @@ reversed first (`SimplePolygon.orientCCW`).
 For ear clipping the goal was, for a simple polygon as input and triangles as
 output, theorems that
 
-- the output triangles are built from input vertices (by construction, not
-  yet a theorem);
+- the output triangles are built from input vertices
+  (`mem_range_of_mem_earClip`);
 - their interiors do not overlap (`IsSimple.pairwise_disjoint_earClip`);
 - together they cover the polygon's region exactly
   (`IsSimple.mem_region_iff_earClip`);
@@ -545,9 +592,11 @@ colours it by the triangle containing it. Both are correct when they agree
 with `SimplePolygon.toRegion`, which is what this library is building toward.
 This is motivation only: no rendering code is a dependency or is ported.
 
-A certificate verifier is a parallel goal: an external triangulator (Earcut
-or any other) produces candidate triangle indices, and a Lean-verified checker
-decides whether they form a valid triangulation of the input. A fast
+A certificate verifier is the parallel goal, now in place
+(`IsTriangulation`, see [Checking a triangulation](#checking-a-triangulation)):
+an external triangulator (Earcut or any other) produces candidate triangle
+indices, and a check proved sound in Lean decides whether they form a valid
+triangulation of the input. A fast
 implementation then need not be reimplemented in Lean for its output to be
 trusted, which is where this meets practical GIS and graphics.
 
@@ -599,12 +648,14 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Polygon/Jordan.lean` | simple polygons wind `0` or `±1` times; `WindsZeroOrOne` from `IsCCW`; the ear theorems for counterclockwise polygons |
 | `LeanComputationalGeometry/Polygon/Diagonal.lean` | chains, diagonals, the winding numbers, simplicity and open regions of the two sides of a diagonal |
 | `LeanComputationalGeometry/Polygon/TwoEars.lean` | a convex vertex, a diagonal, ear existence, the Two Ears Theorem |
-| `LeanComputationalGeometry/Polygon/EarClip.lean` | `earClip` and its correctness; every simple polygon counterclockwise or clockwise; `orientCCW` |
+| `LeanComputationalGeometry/Polygon/EarClip.lean` | `earClip` and its correctness; every simple polygon counterclockwise or clockwise; `orientCCW`; the closed region as the closure of the open one |
+| `LeanComputationalGeometry/Polygon/Certificate.lean` | `IsTriangulation`, a check of index triangulations, and its soundness |
 | `LeanComputationalGeometry/Examples/Basic.lean` | worked examples: segments, triangles, signed area |
 | `LeanComputationalGeometry/Examples/Polygons.lean` | worked examples: inside, outside and boundary points of three polygons |
 | `LeanComputationalGeometry/Examples/Ears.lean` | worked examples: ears of the square and the L, and cutting them off |
 | `LeanComputationalGeometry/Examples/EarRegion.lean` | worked examples: the region theorems for the square and the L, and the clockwise L |
 | `LeanComputationalGeometry/Examples/TwoEars.lean` | worked examples: two ears of a pentagon, a square with collinear vertices, a comb, the square and the L |
 | `LeanComputationalGeometry/Examples/EarClip.lean` | worked examples: ear clipping the square, the comb and the clockwise L; a flat ring with no ear |
+| `LeanComputationalGeometry/Examples/Certificate.lean` | worked examples: index triangulations of the square and the comb checked, two wrong ones rejected |
 | `LeanComputationalGeometry/Axioms.lean` | the axiom audit |
 | `scripts/joint_check.sh` | the joint check with the sibling libraries |

@@ -5,6 +5,7 @@ import LeanComputationalGeometry.Examples.Ears
 import LeanComputationalGeometry.Examples.EarRegion
 import LeanComputationalGeometry.Examples.TwoEars
 import LeanComputationalGeometry.Examples.EarClip
+import LeanComputationalGeometry.Examples.Certificate
 
 /-!
 # Axiom audit
@@ -960,3 +961,117 @@ builds it.
 /-- info: 'ComputationalGeometry.Examples.flat_earClip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.Examples.flat_earClip
+
+/-! ## Checking triangulations -/
+
+/-- info: 'ComputationalGeometry.dense_orient_ne_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.dense_orient_ne_zero
+
+/-- info: 'ComputationalGeometry.RawPolygon.offLines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.offLines
+
+/-- info: 'ComputationalGeometry.RawPolygon.offLines_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.offLines_eq
+
+/-- info: 'ComputationalGeometry.RawPolygon.isOpen_offLines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.isOpen_offLines
+
+/-- info: 'ComputationalGeometry.RawPolygon.dense_offLines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.dense_offLines
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.not_onBoundary_of_mem_offLines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.not_onBoundary_of_mem_offLines
+
+/-- info: 'ComputationalGeometry.RawPolygon.idxTriangle' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.idxTriangle
+
+/-- info: 'ComputationalGeometry.RawPolygon.winding3_idxTriangle_of_mem_offLines' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.winding3_idxTriangle_of_mem_offLines
+
+/-- info: 'ComputationalGeometry.RawPolygon.sideCount' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sideCount
+
+/-- info: 'ComputationalGeometry.RawPolygon.edgeCount' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.edgeCount
+
+/-- info: 'ComputationalGeometry.RawPolygon.sum_map_sides' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sum_map_sides
+
+/-- info: 'ComputationalGeometry.RawPolygon.sum_edges_eq_sum_edgeCount' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sum_edges_eq_sum_edgeCount
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.sum_sides_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.sum_sides_eq
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.windingNumber_eq_sum' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.windingNumber_eq_sum
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.signedArea2_eq_sum' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.signedArea2_eq_sum
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.windingNumber_eq_count' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.windingNumber_eq_count
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.polygon_isCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.polygon_isCCW
+
+/-- info: 'ComputationalGeometry.RawPolygon.pairwise_disjoint_of_sum_le_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.pairwise_disjoint_of_sum_le_one
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.pairwise_disjoint' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.pairwise_disjoint
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.mem_region_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.mem_region_iff
+
+/-- info: 'ComputationalGeometry.RawPolygon.exists_vertex_removeEar' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.exists_vertex_removeEar
+
+/-- info: 'ComputationalGeometry.RawPolygon.corners_mem_range_of_mem_earClip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.corners_mem_range_of_mem_earClip
+
+/-- info: 'ComputationalGeometry.RawPolygon.mem_range_of_mem_earClip' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.mem_range_of_mem_earClip
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.region_subset_closure_openRegion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.region_subset_closure_openRegion
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.closure_openRegion' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.closure_openRegion
+
+/-- info: 'ComputationalGeometry.Examples.square_isTriangulation' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_isTriangulation
+
+/-- info: 'ComputationalGeometry.Examples.square_isTriangulation'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.square_isTriangulation'
+
+/-- info: 'ComputationalGeometry.Examples.comb_isTriangulation' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.Examples.comb_isTriangulation
