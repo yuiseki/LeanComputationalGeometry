@@ -21,7 +21,12 @@ recursion runs down to a triangle. Then:
 - `mem_region_iff_earClip`: their closed triangles cover the closed region;
 - `interior_subset_openRegion_of_mem_earClip`: their interiors lie in the
   open region;
-- `pairwise_disjoint_earClip`: their interiors do not overlap.
+- `pairwise_disjoint_earClip`: their interiors do not overlap;
+- `mem_range_of_mem_earClip`: their corners are vertices of the polygon (for
+  any ring, by construction).
+
+So the closed region is the closure of the open region
+(`IsSimple.closure_openRegion`).
 
 The induction step needs one fact beyond those of `Polygon/EarRegion.lean`:
 the smaller ring's open region lies in the polygon's
@@ -94,6 +99,49 @@ theorem IsSimple.isCCW_earTriangle_of_n_eq_three (hP : P.IsSimple) (hJ : P.Winds
     have := hJ.signedArea2_nonneg
     rwa [hPT, Triangle.signedArea2_toPolygon] at this
   exact lt_of_le_of_ne hpos (Ne.symm hnd)
+
+/-- Every vertex of the smaller ring is a vertex of the polygon. -/
+theorem exists_vertex_removeEar (P : RawPolygon) (i : Fin P.n) (j : Fin (P.removeEar i).n) :
+    ∃ k, (P.removeEar i).vertex j = P.vertex k := by
+  obtain ⟨_ | m, v⟩ := P
+  · exact i.elim0
+  · exact ⟨(@Fin.castSucc m j : Fin (m + 1)) + (i + 1), rfl⟩
+
+/-- The corners of every triangle of `earClip` are vertices of the ring, with no
+assumption on the ring. -/
+theorem corners_mem_range_of_mem_earClip :
+    ∀ (m : ℕ) {P : RawPolygon}, P.n = m → ∀ T ∈ P.earClip,
+      T.a ∈ range P.vertex ∧ T.b ∈ range P.vertex ∧ T.c ∈ range P.vertex := by
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+  intro P hm T hT
+  have hear : ∀ i, T = P.earTriangle i →
+      T.a ∈ range P.vertex ∧ T.b ∈ range P.vertex ∧ T.c ∈ range P.vertex := by
+    rintro i rfl
+    exact ⟨⟨_, rfl⟩, ⟨_, rfl⟩, ⟨_, rfl⟩⟩
+  by_cases h : 4 ≤ P.n ∧ ∃ i, P.IsEar i
+  · obtain ⟨i, -, he⟩ := exists_earClip_eq_cons h.1 h.2
+    rw [he, List.mem_cons] at hT
+    rcases hT with rfl | hT
+    · exact hear i rfl
+    · have hQn := removeEar_n P i
+      have hrange : range (P.removeEar i).vertex ⊆ range P.vertex := by
+        rintro _ ⟨j, rfl⟩
+        obtain ⟨k, hk⟩ := exists_vertex_removeEar P i j
+        exact ⟨k, hk.symm⟩
+      obtain ⟨ha, hb, hc⟩ := ih _ (by omega) rfl T hT
+      exact ⟨hrange ha, hrange hb, hrange hc⟩
+  · by_cases h3 : P.n = 3
+    · rw [earClip_of_n_eq_three h3, List.mem_singleton] at hT
+      exact hear _ hT
+    · rw [earClip, dite_eq_right_of_eq_false (eq_false h), dite_eq_right_of_eq_false (eq_false h3)]
+        at hT
+      simp at hT
+
+theorem mem_range_of_mem_earClip {T : Triangle} (hT : T ∈ P.earClip) :
+    T.a ∈ range P.vertex ∧ T.b ∈ range P.vertex ∧ T.c ∈ range P.vertex :=
+  corners_mem_range_of_mem_earClip _ rfl T hT
 
 /-- Off its boundary, the smaller ring winds `0` times around the points of the
 ear triangle: inside, `1 - 1 = 0`, and on its sides by local constancy. -/
@@ -194,6 +242,21 @@ theorem IsSimple.interior_subset_openRegion_of_mem_earClip (hP : P.IsSimple)
 theorem IsSimple.pairwise_disjoint_earClip (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) :
     P.earClip.Pairwise (fun T T' => Disjoint (interior T.toSet) (interior T'.toSet)) :=
   (IsSimple.earClip_spec _ rfl hP hJ).2.2.2.2.2
+
+/-- The closed region of a simple polygon winding `0` or `1` times is the
+closure of its open region: each closed triangle of `earClip` is the closure
+of its interior, which lies in the open region. -/
+theorem IsSimple.region_subset_closure_openRegion (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) :
+    P.region ⊆ closure P.openRegion := by
+  intro p hp
+  obtain ⟨T, hT, hpT⟩ := (hP.mem_region_iff_earClip hJ).mp hp
+  rw [← Triangle.closure_interior (hP.isCCW_of_mem_earClip hJ hT)] at hpT
+  exact closure_mono (hP.interior_subset_openRegion_of_mem_earClip hJ hT) hpT
+
+theorem IsSimple.closure_openRegion (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) :
+    closure P.openRegion = P.region :=
+  Subset.antisymm (P.isClosed_region.closure_subset_iff.mpr P.openRegion_subset_region)
+    (hP.region_subset_closure_openRegion hJ)
 
 /-! ## Orientation -/
 
