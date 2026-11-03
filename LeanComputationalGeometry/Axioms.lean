@@ -1075,3 +1075,45 @@ builds it.
 /-- info: 'ComputationalGeometry.Examples.comb_isTriangulation' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.Examples.comb_isTriangulation
+
+/-! ## Completeness of the triangulation check -/
+
+/-- info: 'ComputationalGeometry.RawPolygon.mapTri' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.mapTri
+
+/-- info: 'ComputationalGeometry.RawPolygon.sideCount_cons' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sideCount_cons
+
+/-- info: 'ComputationalGeometry.RawPolygon.sideCount_map' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sideCount_map
+
+/-- info: 'ComputationalGeometry.RawPolygon.sideCount_map_eq_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sideCount_map_eq_zero
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.relabel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.relabel
+
+/-- info: 'ComputationalGeometry.RawPolygon.isTriangulation_cons_dropLast' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.isTriangulation_cons_dropLast
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_isTriangulation_aux' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_isTriangulation_aux
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_isTriangulation' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_isTriangulation
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsSimple.exists_isTriangulation_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsSimple.exists_isTriangulation_iff
+
+/-- info: 'ComputationalGeometry.SimplePolygon.exists_isTriangulation_orientCCW' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.SimplePolygon.exists_isTriangulation_orientCCW

@@ -14,7 +14,9 @@ then give that the triangles cover the polygon's region without overlapping.
   square, one repeating a triangle;
 - the comb, cut into its four tooth tips and a fan of three triangles from
   the corner at the origin, a triangulation that ear clipping need not
-  produce, through three collinear vertices.
+  produce, through three collinear vertices;
+- the L, which has a list that passes by completeness, and the clockwise L,
+  which has none.
 -/
 
 namespace ComputationalGeometry.Examples
@@ -79,6 +81,17 @@ example : combTriangles.Pairwise fun t t' =>
 /-- The areas add up: the comb's signed double area is the sum of the seven. -/
 example : comb.signedArea2 = (combTriangles.map fun t => (comb.idxTriangle t).signedArea2).sum :=
   comb_isTriangulation.signedArea2_eq_sum
+
+/-! ## Completeness -/
+
+/-- The L has a list of four index triangles that passes, by completeness. -/
+example : ∃ ts, ell.IsTriangulation ts ∧ ts.length = 4 :=
+  ell_isSimple.exists_isTriangulation (ell_isSimple.windsZeroOrOne_of_isCCW ell_isCCW)
+
+/-- The clockwise L has none: a list that passes makes the polygon
+counterclockwise. -/
+example : ¬ ∃ ts, ellCW.IsTriangulation ts := fun h =>
+  absurd ((ellCW_isSimple.exists_isTriangulation_iff).mp h) (not_lt.mpr ellCW_isCW.le)
 
 end
 

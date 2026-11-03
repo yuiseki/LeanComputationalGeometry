@@ -436,6 +436,9 @@ mentions the regions, yet for a simple polygon they determine them:
 | The polygon is counterclockwise | `IsTriangulation`, `3 ≤ n` | `IsTriangulation.polygon_isCCW` |
 | The triangles' interiors pairwise do not overlap | `IsTriangulation`, simple | `IsTriangulation.pairwise_disjoint` |
 | The closed triangles cover the closed region exactly | `IsTriangulation`, simple | `IsTriangulation.mem_region_iff` |
+| The check survives relabelling, and adding the ear triangle at the last vertex | `Relabel`; an ear at the last vertex | `IsTriangulation.relabel`, `isTriangulation_cons_dropLast` |
+| Complete: ear clipping's triangles, as indices, pass, `n - 2` of them | simple, `WindsZeroOrOne` | `IsSimple.exists_isTriangulation`, `SimplePolygon.exists_isTriangulation_orientCCW` |
+| Some list passes exactly when the polygon is counterclockwise | simple | `IsSimple.exists_isTriangulation_iff` |
 
 The internal sides cancel because each is crossed once in each direction, so
 in any edge sum of an antisymmetric function they drop out; the winding
@@ -448,9 +451,15 @@ The open region minus the lines is covered, so its closure, the closed
 region, is too; and each triangle's interior, minus the lines, is in the
 open region, so the closed triangle is in the closed region.
 
+Completeness follows ear clipping step by step. Each step moves the ear to
+the last vertex, a relabelling the check survives, then adds the ear triangle
+at the last vertex to a list for the ring without it; the sides of the ear
+triangle cancel the two ear edges and the diagonal, the one edge of the
+smaller ring that is not an edge of the polygon.
+
 The polygon itself must be known simple, which the check does not decide.
-That the number of triangles is `n - 2`, and that every simple polygon has a
-list that passes the check (ear clipping's, as indices), are not proved yet.
+That every list that passes has `n - 2` triangles is not proved yet; ear
+clipping's has.
 
 ### Examples
 
@@ -487,7 +496,8 @@ points. `LeanComputationalGeometry/Examples/Certificate.lean` checks index
 triangulations: the square cut along either diagonal, and the comb cut into
 its four tooth tips and a fan of three triangles from the origin through its
 three collinear vertices; two wrong lists for the square, one with
-overlapping triangles and one repeating a triangle, are rejected by `decide`.
+overlapping triangles and one repeating a triangle, are rejected by `decide`;
+the L has a list of four that passes, and the clockwise L none.
 
 ### On LeanGeospatial's shoelace
 
@@ -534,7 +544,8 @@ Mathlib. It does not check:
 | a simple polygon has a nonzero shoelace sum, so is counterclockwise or clockwise | done, through ear clipping |
 | triangle corners are input vertices | done |
 | a certificate checker for external triangulations | done: `IsTriangulation`, sound for simple polygons |
-| completeness of the checker (ear clipping's output passes), `n - 2` for any accepted list | next |
+| completeness of the checker | done: ear clipping's output passes, `n - 2` triangles |
+| `n - 2` for every accepted list; deciding simplicity | next |
 | polygons with holes | later |
 | clipping | later |
 | convex hull | later |
@@ -595,7 +606,7 @@ This is motivation only: no rendering code is a dependency or is ported.
 A certificate verifier is the parallel goal, now in place
 (`IsTriangulation`, see [Checking a triangulation](#checking-a-triangulation)):
 an external triangulator (Earcut or any other) produces candidate triangle
-indices, and a check proved sound in Lean decides whether they form a valid
+indices, and a check proved sound and complete in Lean decides whether they form a valid
 triangulation of the input. A fast
 implementation then need not be reimplemented in Lean for its output to be
 trusted, which is where this meets practical GIS and graphics.
@@ -649,7 +660,7 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Polygon/Diagonal.lean` | chains, diagonals, the winding numbers, simplicity and open regions of the two sides of a diagonal |
 | `LeanComputationalGeometry/Polygon/TwoEars.lean` | a convex vertex, a diagonal, ear existence, the Two Ears Theorem |
 | `LeanComputationalGeometry/Polygon/EarClip.lean` | `earClip` and its correctness; every simple polygon counterclockwise or clockwise; `orientCCW`; the closed region as the closure of the open one |
-| `LeanComputationalGeometry/Polygon/Certificate.lean` | `IsTriangulation`, a check of index triangulations, and its soundness |
+| `LeanComputationalGeometry/Polygon/Certificate.lean` | `IsTriangulation`, a check of index triangulations, its soundness and completeness |
 | `LeanComputationalGeometry/Examples/Basic.lean` | worked examples: segments, triangles, signed area |
 | `LeanComputationalGeometry/Examples/Polygons.lean` | worked examples: inside, outside and boundary points of three polygons |
 | `LeanComputationalGeometry/Examples/Ears.lean` | worked examples: ears of the square and the L, and cutting them off |

@@ -34,6 +34,14 @@ around the point. For a simple polygon it is at most `1`, which gives:
 
 The last uses that the closed region is the closure of the open region
 (`IsSimple.closure_openRegion`), proved with ear clipping.
+
+The check is also complete: ear clipping's triangles, as indices, pass it
+(`IsSimple.exists_isTriangulation`, with `n - 2` triangles). Each step moves
+the ear to the last vertex, which relabels the vertices
+(`IsTriangulation.relabel`), and adds the ear triangle at the last vertex to a
+triangulation of the ring without it (`isTriangulation_cons_dropLast`). So a
+simple polygon has a list that passes exactly when it is counterclockwise
+(`IsSimple.exists_isTriangulation_iff`).
 -/
 
 namespace ComputationalGeometry
@@ -340,6 +348,207 @@ theorem IsTriangulation.mem_region_iff {ts : List (Fin P.n × Fin P.n × Fin P.n
       (closure_mono (P.dense_offLines.open_subset_closure_inter isOpen_interior) hpt |>
         fun h' => by rwa [closure_closure] at h')
 
+/-! ## Every simple polygon has a triangulation that passes
+
+Ear clipping's triangles, as vertex indices, pass the check. One step of it
+cuts the ear at the last vertex, after moving the ear there; the check
+survives both: relabelling the vertices (`IsTriangulation.relabel`), and adding the
+ear triangle at the last vertex to a triangulation of the ring without it
+(`isTriangulation_cons_dropLast`).
+-/
+
+/-- A triangle of indices sent along a map of indices. -/
+def mapTri {α β : Type*} (f : α → β) (t : α × α × α) : β × β × β := (f t.1, f t.2.1, f t.2.2)
+
+theorem sideCount_cons (t : Fin P.n × Fin P.n × Fin P.n) (ts : List (Fin P.n × Fin P.n × Fin P.n))
+    (u v : Fin P.n) :
+    P.sideCount (t :: ts) u v = (if (t.1, t.2.1) = (u, v) then 1 else 0) +
+      (if (t.2.1, t.2.2) = (u, v) then 1 else 0) + (if (t.2.2, t.1) = (u, v) then 1 else 0) +
+      P.sideCount ts u v := by
+  simp [sideCount, List.map_cons, List.sum_cons]
+
+theorem sideCount_map {Q : RawPolygon} (f : Fin Q.n → Fin P.n) (hf : Function.Injective f)
+    (ts : List (Fin Q.n × Fin Q.n × Fin Q.n)) (a b : Fin Q.n) :
+    P.sideCount (ts.map (mapTri f)) (f a) (f b) = Q.sideCount ts a b := by
+  unfold sideCount
+  rw [List.map_map]
+  congr 1
+  refine List.map_congr_left fun t _ => ?_
+  simp [mapTri, Prod.ext_iff, hf.eq_iff]
+
+theorem sideCount_map_eq_zero {Q : RawPolygon} (f : Fin Q.n → Fin P.n)
+    (ts : List (Fin Q.n × Fin Q.n × Fin Q.n)) {u v : Fin P.n}
+    (h : (∀ a, f a ≠ u) ∨ ∀ b, f b ≠ v) : P.sideCount (ts.map (mapTri f)) u v = 0 := by
+  unfold sideCount
+  rw [List.map_map]
+  refine List.sum_eq_zero fun x hx => ?_
+  obtain ⟨t, -, rfl⟩ := List.mem_map.mp hx
+  rcases h with h | h <;> simp [mapTri, Prod.ext_iff, h]
+
+/-- The check survives relabelling the vertices. -/
+theorem IsTriangulation.relabel {Q : RawPolygon} (ρ : Relabel Q P)
+    {ts : List (Fin Q.n × Fin Q.n × Fin Q.n)} (h : Q.IsTriangulation ts) :
+    P.IsTriangulation (ts.map (mapTri ρ.σ)) where
+  isCCW t ht := by
+    obtain ⟨t', ht', rfl⟩ := List.mem_map.mp ht
+    have := h.isCCW t' ht'
+    simpa [idxTriangle, mapTri, ρ.vertex_eq] using this
+  sides u v := by
+    obtain ⟨a, rfl⟩ := ρ.σ.surjective u
+    obtain ⟨b, rfl⟩ := ρ.σ.surjective v
+    have he : ∀ a b, P.edgeCount (ρ.σ a) (ρ.σ b) = Q.edgeCount a b := fun a b => by
+      simp only [edgeCount, ← ρ.next_eq, ρ.σ.injective.eq_iff]
+    rw [sideCount_map _ ρ.σ.injective, sideCount_map _ ρ.σ.injective, he, he]
+    exact h.sides a b
+
+local notation "◇" v:max => RawPolygon.mk _ v
+
+/-- Adding the ear triangle at the last vertex to a triangulation of the ring
+without it gives a triangulation. -/
+theorem isTriangulation_cons_dropLast {l : ℕ} (v : Fin (l + 1 + 1) → Point2D)
+    (hear : ((◇v).earTriangle (Fin.last (l + 1))).IsCCW)
+    {ts : List (Fin (l + 1) × Fin (l + 1) × Fin (l + 1))}
+    (h : (◇(v ∘ Fin.castSucc)).IsTriangulation ts) :
+    (◇v).IsTriangulation
+      ((Fin.castSucc (Fin.last l), Fin.last (l + 1), 0) :: ts.map (mapTri Fin.castSucc)) := by
+  set R := ◇v
+  set Q := ◇(v ∘ Fin.castSucc)
+  have hnL : R.next (Fin.last (l + 1)) = 0 := next_last v
+  have hpL : R.prev (Fin.last (l + 1)) = Fin.castSucc (Fin.last l) := prev_last v
+  have hcL : ∀ a : Fin (l + 1), Fin.castSucc a ≠ (Fin.last (l + 1)) := fun a => Fin.castSucc_ne_last a
+  refine ⟨fun t ht => ?_, fun u w => ?_⟩
+  · rcases List.mem_cons.mp ht with rfl | ht
+    · have : R.idxTriangle (Fin.castSucc (Fin.last l), (Fin.last (l + 1)), 0) = R.earTriangle (Fin.last (l + 1)) := by
+        simp only [idxTriangle, earTriangle, prevVertex, nextVertex, hnL, hpL]
+      rw [this]; exact hear
+    · obtain ⟨t', ht', rfl⟩ := List.mem_map.mp ht
+      exact h.isCCW t' ht'
+  -- The condition is symmetric in `u` and `w`, and trivial when they agree.
+  suffices key : ∀ u w, w ≠ (Fin.last (l + 1)) → R.sideCount
+      ((Fin.castSucc (Fin.last l), (Fin.last (l + 1)), 0) :: ts.map (mapTri Fin.castSucc)) u w + R.edgeCount w u =
+      R.sideCount ((Fin.castSucc (Fin.last l), (Fin.last (l + 1)), 0) :: ts.map (mapTri Fin.castSucc)) w u +
+        R.edgeCount u w by
+    by_cases hw : w = (Fin.last (l + 1))
+    · by_cases hu : u = (Fin.last (l + 1))
+      · rw [hu, hw]
+      · exact (key w u hu).symm
+    · exact key u w hw
+  intro u w hw
+  obtain ⟨b, rfl⟩ := Fin.exists_castSucc_eq.mpr hw
+  have hQnext : ∀ a : Fin (l + 1), a ≠ Fin.last l →
+      R.next (Fin.castSucc a) = Fin.castSucc (Q.next a) := fun a ha =>
+    (castSucc_dropLast_next v ha).symm
+  have hRlast : R.next (Fin.castSucc (Fin.last l)) = (Fin.last (l + 1)) := by
+    rw [← hpL, next_prev]
+  have hQlast : Q.next (Fin.last l) = 0 := dropLast_next_last v
+  have hinj : Function.Injective (Fin.castSucc : Fin (l + 1) → Fin (l + 1 + 1)) :=
+    Fin.castSucc_injective _
+  have hcL' : Fin.castSucc (Fin.last l) ≠ (Fin.last (l + 1)) := hcL _
+  have h0L : (0 : Fin (l + 1 + 1)) ≠ (Fin.last (l + 1)) := by rw [← Fin.castSucc_zero]; exact hcL _
+  have hnext : ∀ x, R.next x = (Fin.last (l + 1)) ↔ x = Fin.castSucc (Fin.last l) := fun x => by
+    rw [← hRlast, R.next_injective.eq_iff]
+  induction u using Fin.lastCases with
+  | last =>
+    rw [sideCount_cons, sideCount_cons,
+      sideCount_map_eq_zero (P := R) (Q := Q) Fin.castSucc ts (Or.inl hcL),
+      sideCount_map_eq_zero (P := R) (Q := Q) Fin.castSucc ts (Or.inr hcL)]
+    have e₁ : (0 : Fin (l + 1 + 1)) = Fin.castSucc b ↔ b = 0 := by
+      rw [← Fin.castSucc_zero, hinj.eq_iff, eq_comm]
+    have e₂ : Fin.castSucc (Fin.last l) = Fin.castSucc b ↔ b = Fin.last l := by
+      rw [hinj.eq_iff, eq_comm]
+    simp only [edgeCount, hnL, hnext, Prod.mk.injEq, hcL', h0L, (hcL b).symm, false_and, and_false,
+      true_and, and_true, e₁, e₂, ↓reduceIte]
+    split_ifs <;> omega
+  | cast a =>
+    rw [sideCount_cons, sideCount_cons, sideCount_map (P := R) (Q := Q) Fin.castSucc hinj ts a b,
+      sideCount_map (P := R) (Q := Q) Fin.castSucc hinj ts b a]
+    -- The edges of the ring with the last vertex, against those without.
+    have hab : ∀ x y : Fin (l + 1), R.edgeCount (Fin.castSucc x) (Fin.castSucc y) +
+        (if x = Fin.last l ∧ y = 0 then 1 else 0) = Q.edgeCount x y := by
+      intro x y
+      by_cases hx : x = Fin.last l
+      · subst hx
+        simp only [edgeCount, hRlast, hQlast, (hcL y).symm, ↓reduceIte, true_and, zero_add]
+        by_cases hy : y = 0
+        · simp [hy]
+        · simp [hy, Ne.symm hy]
+      · simp only [edgeCount, hQnext x hx, hinj.eq_iff, hx, false_and, ↓reduceIte, add_zero]
+    have hI : ∀ x y : Fin (l + 1),
+        ((0 : Fin (l + 1 + 1)), Fin.castSucc (Fin.last l)) = (Fin.castSucc x, Fin.castSucc y) ↔
+          (y = Fin.last l ∧ x = 0) := fun x y => by
+      rw [Prod.mk.injEq, ← Fin.castSucc_zero, hinj.eq_iff, hinj.eq_iff, eq_comm (a := (0 : Fin (l + 1))),
+        eq_comm (a := Fin.last l), and_comm]
+    simp only [hI, Prod.mk.injEq, (hcL _).symm, false_and, and_false, ↓reduceIte, zero_add]
+    have h₁ := hab a b
+    have h₂ := hab b a
+    have h₃ : Q.sideCount ts a b + Q.edgeCount b a = Q.sideCount ts b a + Q.edgeCount a b :=
+      h.sides a b
+    split_ifs at h₁ h₂ ⊢ <;> omega
+
+/-- Every simple polygon winding `0` or `1` times has a list of index
+triangles that passes the check, with `n - 2` triangles: ear clipping's. -/
+theorem IsSimple.exists_isTriangulation_aux :
+    ∀ (m : ℕ) {P : RawPolygon}, P.n = m → P.IsSimple → P.WindsZeroOrOne →
+      ∃ ts, P.IsTriangulation ts ∧ ts.length = P.n - 2 := by
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+  intro P hm hP hJ
+  rcases hP.three_le.eq_or_lt with h3 | h4
+  · obtain ⟨n, v⟩ := P
+    simp only at h3
+    subst h3
+    -- The side condition does not look at the coordinates.
+    refine ⟨[(0, 1, 2)], ⟨fun t ht => ?_, (by decide : ∀ u w : Fin 3,
+      (RawPolygon.mk 3 fun _ => 0).sideCount [(0, 1, 2)] u w + (RawPolygon.mk 3 fun _ => 0).edgeCount w u =
+        (RawPolygon.mk 3 fun _ => 0).sideCount [(0, 1, 2)] w u +
+          (RawPolygon.mk 3 fun _ => 0).edgeCount u w)⟩, rfl⟩
+    rw [List.mem_singleton] at ht
+    subst ht
+    have hT := hP.isCCW_earTriangle_of_n_eq_three hJ rfl
+    have hp : (finRotate 3).symm 1 = 0 := by decide
+    have hn : finRotate 3 1 = 2 := by decide
+    have h' : (Triangle.mk (v ((finRotate 3).symm 1)) (v 1) (v (finRotate 3 1))).IsCCW := hT
+    rw [hp, hn] at h'
+    exact h'
+  obtain ⟨i, hi⟩ := hP.exists_ear hJ h4
+  obtain ⟨_ | _ | l, v⟩ := P
+  · exact absurd h4 (by norm_num)
+  · exact absurd h4 (by norm_num)
+  simp only at hm
+  have hQ : (◇((fun j => v (j + (i + 1))) ∘ Fin.castSucc)).IsSimple := hi.isSimple_removeEar hP h4
+  have hQJ : (◇((fun j => v (j + (i + 1))) ∘ Fin.castSucc)).WindsZeroOrOne :=
+    hi.windsZeroOrOne_removeEar hP h4 hJ
+  obtain ⟨ts, hts, hlen⟩ := ih (l + 1) (by omega) rfl hQ hQJ
+  have hear : ((◇fun j => v (j + (i + 1))).earTriangle (Fin.last (l + 1))).IsCCW := by
+    rw [earTriangle_shiftLast]; exact hi.isCCW
+  refine ⟨_, (isTriangulation_cons_dropLast _ hear hts).relabel (shiftLastRelabel v i), ?_⟩
+  simp only [List.length_map, List.length_cons, hlen]
+  simp only at h4 hlen ⊢
+  omega
+
+theorem IsSimple.exists_isTriangulation (hP : P.IsSimple) (hJ : P.WindsZeroOrOne) :
+    ∃ ts, P.IsTriangulation ts ∧ ts.length = P.n - 2 :=
+  IsSimple.exists_isTriangulation_aux _ rfl hP hJ
+
+/-- For a simple polygon, some list passes the check exactly when the polygon
+is counterclockwise: the check is sound and complete. -/
+theorem IsSimple.exists_isTriangulation_iff (hP : P.IsSimple) :
+    (∃ ts, P.IsTriangulation ts) ↔ P.IsCCW :=
+  ⟨fun ⟨_, h⟩ => h.polygon_isCCW hP.three_le, fun h =>
+    let ⟨ts, hts, _⟩ := hP.exists_isTriangulation (hP.windsZeroOrOne_of_isCCW h)
+    ⟨ts, hts⟩⟩
+
 end RawPolygon
+
+namespace SimplePolygon
+
+/-- Any simple polygon, traversed counterclockwise, has a triangulation that
+passes the check. -/
+theorem exists_isTriangulation_orientCCW (P : SimplePolygon) :
+    ∃ ts, P.orientCCW.1.IsTriangulation ts ∧ ts.length = P.orientCCW.1.n - 2 :=
+  P.orientCCW.2.exists_isTriangulation P.windsZeroOrOne_orientCCW
+
+end SimplePolygon
 
 end ComputationalGeometry
