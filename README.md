@@ -59,9 +59,11 @@ from either sibling library is a point here without conversion.
 | `ConvexVertex`, `ReflexVertex`, `LocallyDegenerate` | `orient (prevVertex i) (vertex i) (nextVertex i)` is `> 0`, `< 0`, `= 0` |
 | `RawPolygon.IsEar P i` | vertex `i` is convex and no other vertex lies in the closed ear triangle |
 | `RawPolygon.removeEar P i` | the ring without vertex `i`, its neighbours joined by the ear diagonal |
-| `RawPolygon.WindsZeroOrOne P` | off the boundary, `windingNumber P p` is `0` or `1`; true for every counterclockwise simple polygon (`IsSimple.windsZeroOrOne_of_isCCW`) |
+| `RawPolygon.WindsZeroOrOne P` | off the boundary, `windingNumber P p` is `0` or `1`; for a simple polygon, the same as being counterclockwise (`IsSimple.isCCW_iff_windsZeroOrOne`) |
 | `RawPolygon.chain P i k` | the `k + 1` vertices from vertex `i` on, `k` edges of `P`, closed up by the segment back to vertex `i` |
 | `RawPolygon.IsDiagonal P i k` | `2 ≤ k`, `k + 2 ≤ n`, and the open segment from vertex `i` to the vertex `k` steps on lies in `openRegion P` |
+| `RawPolygon.earClip P` | a list of triangles: with `4 ≤ n` and an ear, that ear's triangle followed by `earClip` of the ring without it; with `n = 3`, the triangle itself; otherwise none |
+| `SimplePolygon.reverse P`, `SimplePolygon.orientCCW P` | the polygon traversed the other way; the polygon traversed counterclockwise (itself, or reversed if clockwise) |
 
 Polygons are kept at three levels:
 
@@ -197,6 +199,8 @@ is (next section).
 | Off the boundary the winding number is `0` or `1` everywhere, or `0` or `-1` everywhere; so at most `1` in absolute value | simple | `IsSimple.windingNumber_cases`, `IsSimple.abs_windingNumber_le_one` |
 | A counterclockwise simple polygon winds `0` or `1` times | simple, `IsCCW` | `IsSimple.windsZeroOrOne_of_isCCW`, `SimplePolygon.windsZeroOrOne_of_isCCW` |
 | A clockwise simple polygon winds `0` or `-1` times | simple, `IsCW` | `IsSimple.windingNumber_eq_zero_or_neg_one_of_isCW` |
+| Conversely, a simple polygon winding `0` or `1` times is counterclockwise | simple, `WindsZeroOrOne` | `IsSimple.isCCW_of_windsZeroOrOne`, `IsSimple.isCCW_iff_windsZeroOrOne` |
+| A simple polygon is counterclockwise or clockwise: its shoelace sum is not `0` | simple | `IsSimple.isCCW_or_isCW`, `IsSimple.signedArea2_ne_zero`, `SimplePolygon.isCCW_or_isCW`, `SimplePolygon.signedArea2_ne_zero` |
 | The local picture: one value `L`, `0` or `1`, on the left of every edge and in the small sectors at the vertices, `L - 1` on the right, every point off the boundary seeing one of the two, and `WindsZeroOrOne` exactly when `L = 1` | simple | `IsSimple.exists_side_values` |
 
 This is the winding-number half of the Jordan curve theorem for polygons, and
@@ -216,12 +220,12 @@ winding number is `0`; so `{L, R}` is `{1, 0}` or `{0, -1}`. Which one is
 the sign of the shoelace sum, because the winding number integrates to half
 of it.
 
-Not proved: that a simple polygon has a nonzero shoelace sum (it would follow
-from the integral once the region where it winds `±1` is known to have
-positive area), so a simple polygon is not yet known to be counterclockwise or
-clockwise; and the converse, that a simple polygon winding `0` or `1` times is
-counterclockwise. `WindsZeroOrOne.signedArea2_nonneg` gives the
-nonstrict half of it.
+The last two rows are proved with ear clipping (see [Ear
+clipping](#ear-clipping)), not from the integral: a simple polygon winding `0`
+or `1` times is cut into at least one counterclockwise triangle, and the
+triangles' signed areas add up to the polygon's.
+`WindsZeroOrOne.signedArea2_nonneg` alone gives only the nonstrict
+inequality.
 
 ### Ears
 
@@ -374,6 +378,40 @@ No polygon split into new `RawPolygon` index ranges is needed beyond
 `chain`, whose vertices are `vertex (next^[m] i)`; the base case `n = 4` is
 not special.
 
+### Ear clipping
+
+`RawPolygon.earClip` is defined on every ring, by recursion on the number of
+vertices, and terminates on every ring: cutting an ear drops one vertex
+(`removeEar_n`). The ear it cuts is chosen without a policy
+(`Classical.choose`); with four vertices or more and no ear it stops with no
+triangles. For a simple polygon winding `0` or `1` times there is always an ear
+and the recursion runs down to a triangle:
+
+| Result | Assumptions | Theorem |
+| --- | --- | --- |
+| With four vertices or more, `earClip` cuts some ear and goes on with the smaller ring; with three it returns the triangle | `4 ≤ n` and an ear; `n = 3` | `exists_earClip_eq_cons`, `earClip_of_n_eq_three` |
+| A simple ring of three vertices winding `0` or `1` times is a counterclockwise triangle | simple, `WindsZeroOrOne`, `n = 3` | `eq_earTriangle_toPolygon`, `IsSimple.isCCW_earTriangle_of_n_eq_three` |
+| The smaller polygon's open region lies in the polygon's | simple, `4 ≤ n`, `WindsZeroOrOne` | `IsEar.windingNumber_removeEar_eq_zero`, `IsEar.openRegion_removeEar_subset` |
+| There are `n - 2` triangles | simple, `WindsZeroOrOne` | `IsSimple.length_earClip` |
+| Each is counterclockwise | simple, `WindsZeroOrOne` | `IsSimple.isCCW_of_mem_earClip` |
+| Their signed areas add up to the polygon's | simple, `WindsZeroOrOne` | `IsSimple.sum_signedArea2_earClip` |
+| The closed triangles cover the closed region exactly | simple, `WindsZeroOrOne` | `IsSimple.mem_region_iff_earClip` |
+| Their interiors lie in the open region and pairwise do not overlap | simple, `WindsZeroOrOne` | `IsSimple.interior_subset_openRegion_of_mem_earClip`, `IsSimple.pairwise_disjoint_earClip` |
+| The same for a `SimplePolygon`, and for any simple polygon after `orientCCW`, which keeps its regions | simple | `SimplePolygon.length_earClip` and the rest, `SimplePolygon.isCCW_orientCCW`, `SimplePolygon.toRegion_orientCCW`, `SimplePolygon.mem_toRegion_iff_earClip_orientCCW` |
+
+All of these are proved together by strong induction on the number of vertices
+(`IsSimple.earClip_spec`). The step uses the facts of [Ears](#ears) for the
+ear cut: the region splits into the smaller ring's and the ear triangle, the
+ear triangle's interior lies in the open region and misses the smaller ring's
+open region, and the smaller ring is again simple and winds `0` or `1` times.
+The one new fact is that the smaller ring's open region lies in the
+polygon's: off its boundary, the smaller ring winds `0` times around the
+points of the ear triangle, so its open region misses the closed ear
+triangle, where the two winding numbers differ.
+
+The triangles are ear triangles, so their corners are vertices of the input;
+this is by construction and not stated as a theorem yet.
+
 ### Examples
 
 `LeanComputationalGeometry/Examples/Basic.lean` runs concrete coordinates
@@ -400,7 +438,12 @@ straight on), and a comb with three teeth and three reflex vertices simple
 and counterclockwise, and gets two ears with disjoint open triangles for
 them and for the square and the L from the general theorem; for the square
 (corners `0` and `2`) and the comb (two tooth tips) the two ears are also
-exhibited by hand.
+exhibited by hand. `LeanComputationalGeometry/Examples/EarClip.lean` cuts the
+square into two triangles of total signed double area `2` and the comb into
+seven covering its region without overlapping, shows that the clockwise L does
+not wind `0` or `1` times and cuts it into four triangles after `orientCCW`,
+and shows `earClip` stopping at once, with no triangles, on four collinear
+points.
 
 ### On LeanGeospatial's shoelace
 
@@ -437,14 +480,15 @@ Mathlib. It does not check:
 | ear predicate | done |
 | ear removal | done |
 | winding topology | done: local constancy off the boundary, constancy on preconnected sets, open and closed regions, the step across an edge |
-| polygonal Jordan / winding orientation | done: `WindsZeroOrOne` proved for every simple counterclockwise polygon, `0` or `-1` for clockwise ones |
+| polygonal Jordan / winding orientation | done: a simple polygon is counterclockwise exactly when it winds `0` or `1` times; every simple polygon is counterclockwise or clockwise |
 | ear local correctness | complete for simple counterclockwise polygons: simplicity, signed area, winding number, region identity, disjoint interiors |
 | Two Ears Theorem | done: two ears with disjoint open triangles, collinear vertices allowed |
 | ear existence | done |
-| well-founded ear clipping | next |
-| `n - 2` triangles | later |
-| triangulation correctness | later |
-| a simple polygon has a nonzero shoelace sum, so is counterclockwise or clockwise | open |
+| well-founded ear clipping | done: `earClip`, total, terminating on every ring |
+| `n - 2` triangles | done |
+| triangulation correctness | done: counterclockwise triangles covering the closed region, interiors pairwise disjoint and in the open region, areas adding up |
+| a simple polygon has a nonzero shoelace sum, so is counterclockwise or clockwise | done, through ear clipping |
+| triangle corners as input vertex indices; a certificate checker for external triangulations | next |
 | polygons with holes | later |
 | clipping | later |
 | convex hull | later |
@@ -453,34 +497,32 @@ The Jordan curve theorem for general continuous curves is not attempted, nor
 the topological half of the polygonal one (two components, the region the
 closure of the open region).
 
-One step of ear clipping now has its shape:
+Ear clipping has its shape:
 
 ```
 SimplePolygon P, n ≥ 4
     ↓  choose an ear i (IsEar)
 triangle P.earTriangle i  +  smaller SimplePolygon P.removeEar i, n - 1 vertices
+    ↓  recursion on n (earClip)
+n - 2 triangles
 ```
 
 with the signed area and the winding number of `P` the sums of the two
-parts', the region of `P` their union, and the interiors disjoint, for any
-simple counterclockwise `P`. An ear exists (`SimplePolygon.exists_ear`, from
-`WindsZeroOrOne` and `4 ≤ n`), and `SimplePolygon.someEar` picks one; the
-vertex count falling by one (`removeEar_n`) is what will make the recursion
-terminate with `n - 2` triangles. The smaller polygon again winds `0` or `1` times
-(`IsEar.windsZeroOrOne_removeEar`): off the ear triangle its winding numbers
-are the polygon's, and on the ear triangle they are `0`. So the property
-carries through the recursion, and only the input polygon needs to be
-counterclockwise. A clockwise input can be reversed first; a simple polygon
-with zero shoelace sum is not yet ruled out.
+parts', the region of `P` their union, and the interiors disjoint. The
+property every step needs, winding `0` or `1` times, carries through the
+recursion (`IsEar.windsZeroOrOne_removeEar`), and a clockwise input is
+reversed first (`SimplePolygon.orientCCW`).
 
-For ear clipping the goal is, for a simple polygon as input and triangles as
+For ear clipping the goal was, for a simple polygon as input and triangles as
 output, theorems that
 
-- the output triangles are built from input vertices;
-- their interiors do not overlap;
-- together they cover the polygon's interior exactly;
-- there are `n - 2` of them;
-- the algorithm terminates.
+- the output triangles are built from input vertices (by construction, not
+  yet a theorem);
+- their interiors do not overlap (`IsSimple.pairwise_disjoint_earClip`);
+- together they cover the polygon's region exactly
+  (`IsSimple.mem_region_iff_earClip`);
+- there are `n - 2` of them (`IsSimple.length_earClip`);
+- the algorithm terminates (`earClip` is a total function).
 
 The target is the classical algorithm's correctness. Mapbox Earcut's
 specifics (z-order hashing, hole elimination, fallbacks for invalid input)
@@ -557,10 +599,12 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Polygon/Jordan.lean` | simple polygons wind `0` or `±1` times; `WindsZeroOrOne` from `IsCCW`; the ear theorems for counterclockwise polygons |
 | `LeanComputationalGeometry/Polygon/Diagonal.lean` | chains, diagonals, the winding numbers, simplicity and open regions of the two sides of a diagonal |
 | `LeanComputationalGeometry/Polygon/TwoEars.lean` | a convex vertex, a diagonal, ear existence, the Two Ears Theorem |
+| `LeanComputationalGeometry/Polygon/EarClip.lean` | `earClip` and its correctness; every simple polygon counterclockwise or clockwise; `orientCCW` |
 | `LeanComputationalGeometry/Examples/Basic.lean` | worked examples: segments, triangles, signed area |
 | `LeanComputationalGeometry/Examples/Polygons.lean` | worked examples: inside, outside and boundary points of three polygons |
 | `LeanComputationalGeometry/Examples/Ears.lean` | worked examples: ears of the square and the L, and cutting them off |
 | `LeanComputationalGeometry/Examples/EarRegion.lean` | worked examples: the region theorems for the square and the L, and the clockwise L |
 | `LeanComputationalGeometry/Examples/TwoEars.lean` | worked examples: two ears of a pentagon, a square with collinear vertices, a comb, the square and the L |
+| `LeanComputationalGeometry/Examples/EarClip.lean` | worked examples: ear clipping the square, the comb and the clockwise L; a flat ring with no ear |
 | `LeanComputationalGeometry/Axioms.lean` | the axiom audit |
 | `scripts/joint_check.sh` | the joint check with the sibling libraries |

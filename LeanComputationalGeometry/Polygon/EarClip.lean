@@ -17,7 +17,25 @@ recursion runs down to a triangle. Then:
 
 - `length_earClip`: there are `n - 2` triangles;
 - `isCCW_of_mem_earClip`: each is counterclockwise;
-- `sum_signedArea2_earClip`: their signed areas add up to the polygon's.
+- `sum_signedArea2_earClip`: their signed areas add up to the polygon's;
+- `mem_region_iff_earClip`: their closed triangles cover the closed region;
+- `interior_subset_openRegion_of_mem_earClip`: their interiors lie in the
+  open region;
+- `pairwise_disjoint_earClip`: their interiors do not overlap.
+
+The induction step needs one fact beyond those of `Polygon/EarRegion.lean`:
+the smaller ring's open region lies in the polygon's
+(`IsEar.openRegion_removeEar_subset`), since off its boundary the smaller ring
+winds `0` times around the points of the ear triangle.
+
+The triangle areas are positive and add up to the polygon's, so a simple
+polygon that winds `0` or `1` times is counterclockwise
+(`IsSimple.isCCW_of_windsZeroOrOne`), the converse of
+`IsSimple.windsZeroOrOne_of_isCCW`. With `IsSimple.windingNumber_cases`, a
+simple polygon is counterclockwise or clockwise (`IsSimple.isCCW_or_isCW`),
+so its shoelace sum is not `0` (`IsSimple.signedArea2_ne_zero`), and
+`SimplePolygon.orientCCW` traverses any simple polygon counterclockwise,
+keeping its regions.
 -/
 
 namespace ComputationalGeometry
@@ -208,5 +226,82 @@ theorem IsSimple.signedArea2_ne_zero (hP : P.IsSimple) : P.signedArea2 ≠ 0 := 
   · exact ne_of_lt h
 
 end RawPolygon
+
+namespace SimplePolygon
+
+/-- Ear clipping of a simple polygon. -/
+noncomputable def earClip (P : SimplePolygon) : List Triangle := P.1.earClip
+
+variable (P : SimplePolygon)
+
+theorem length_earClip (hJ : P.1.WindsZeroOrOne) : P.earClip.length = P.1.n - 2 :=
+  P.2.length_earClip hJ
+
+theorem isCCW_of_mem_earClip (hJ : P.1.WindsZeroOrOne) {T : Triangle} (hT : T ∈ P.earClip) :
+    T.IsCCW :=
+  P.2.isCCW_of_mem_earClip hJ hT
+
+theorem sum_signedArea2_earClip (hJ : P.1.WindsZeroOrOne) :
+    (P.earClip.map Triangle.signedArea2).sum = P.1.signedArea2 :=
+  P.2.sum_signedArea2_earClip hJ
+
+theorem mem_toRegion_iff_earClip (hJ : P.1.WindsZeroOrOne) {p : Point2D} :
+    p ∈ P.toRegion ↔ ∃ T ∈ P.earClip, p ∈ T.toSet :=
+  P.2.mem_region_iff_earClip hJ
+
+theorem interior_subset_toOpenRegion_of_mem_earClip (hJ : P.1.WindsZeroOrOne) {T : Triangle}
+    (hT : T ∈ P.earClip) : interior T.toSet ⊆ P.toOpenRegion :=
+  P.2.interior_subset_openRegion_of_mem_earClip hJ hT
+
+theorem pairwise_disjoint_earClip (hJ : P.1.WindsZeroOrOne) :
+    P.earClip.Pairwise (fun T T' => Disjoint (interior T.toSet) (interior T'.toSet)) :=
+  P.2.pairwise_disjoint_earClip hJ
+
+theorem isCCW_or_isCW : P.1.IsCCW ∨ P.1.IsCW := P.2.isCCW_or_isCW
+
+theorem signedArea2_ne_zero : P.1.signedArea2 ≠ 0 := P.2.signedArea2_ne_zero
+
+/-- The same polygon traversed the other way. -/
+def reverse : SimplePolygon := ⟨P.1.reverse, P.2.reverse⟩
+
+theorem toRegion_reverse : P.reverse.toRegion = P.toRegion := P.1.region_reverse
+
+theorem toOpenRegion_reverse : P.reverse.toOpenRegion = P.toOpenRegion := P.1.openRegion_reverse
+
+open Classical in
+/-- The polygon traversed counterclockwise: itself, or reversed if it is
+clockwise. -/
+noncomputable def orientCCW : SimplePolygon := if P.1.IsCCW then P else P.reverse
+
+theorem isCCW_orientCCW : P.orientCCW.1.IsCCW := by
+  unfold orientCCW
+  split_ifs with h
+  · exact h
+  · exact (RawPolygon.isCCW_reverse_iff P.1).mpr (P.isCCW_or_isCW.resolve_left h)
+
+theorem windsZeroOrOne_orientCCW : P.orientCCW.1.WindsZeroOrOne :=
+  P.orientCCW.2.windsZeroOrOne_of_isCCW P.isCCW_orientCCW
+
+theorem toRegion_orientCCW : P.orientCCW.toRegion = P.toRegion := by
+  unfold orientCCW
+  split_ifs
+  · rfl
+  · exact P.toRegion_reverse
+
+theorem toOpenRegion_orientCCW : P.orientCCW.toOpenRegion = P.toOpenRegion := by
+  unfold orientCCW
+  split_ifs
+  · rfl
+  · exact P.toOpenRegion_reverse
+
+/-- Every simple polygon, whatever its orientation, is cut by ear clipping
+into non-overlapping triangles covering its region, once it is traversed
+counterclockwise. -/
+theorem mem_toRegion_iff_earClip_orientCCW {p : Point2D} :
+    p ∈ P.toRegion ↔ ∃ T ∈ P.orientCCW.earClip, p ∈ T.toSet := by
+  rw [← P.toRegion_orientCCW]
+  exact P.orientCCW.mem_toRegion_iff_earClip P.windsZeroOrOne_orientCCW
+
+end SimplePolygon
 
 end ComputationalGeometry
