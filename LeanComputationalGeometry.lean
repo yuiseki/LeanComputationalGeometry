@@ -16,3 +16,4 @@ import LeanComputationalGeometry.Polygon.EarRegion
 import LeanComputationalGeometry.Polygon.Jordan
 import LeanComputationalGeometry.Polygon.Diagonal
 import LeanComputationalGeometry.Polygon.TwoEars
+import LeanComputationalGeometry.Polygon.EarClip
