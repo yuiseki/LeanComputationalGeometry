@@ -1064,6 +1064,46 @@ builds it.
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.RawPolygon.IsTriangulation.sum_signedArea2_pos
 
+/-- info: 'ComputationalGeometry.RawPolygon.edgeCount_pos_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.edgeCount_pos_iff
+
+/-- info: 'ComputationalGeometry.RawPolygon.sideCount_pos_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.sideCount_pos_iff
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.sideCount_pos_iff_reverse_pos_of_no_edge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.sideCount_pos_iff_reverse_pos_of_no_edge
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.sideCount_difference_eq_edgeCount_difference' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.sideCount_difference_eq_edgeCount_difference
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.exists_opposite_triangle_side' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.exists_opposite_triangle_side
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.region_eq_setOf' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.region_eq_setOf
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.triangle_subset_region' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.triangle_subset_region
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.vertex_mem_region' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.vertex_mem_region
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.range_vertex_subset_region' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.range_vertex_subset_region
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.signedArea_eq_sum' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.signedArea_eq_sum
+
 /-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.windingNumber_eq_count' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.RawPolygon.IsTriangulation.windingNumber_eq_count

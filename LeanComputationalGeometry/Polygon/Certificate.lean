@@ -163,6 +163,33 @@ def sideCount (ts : List (Fin P.n × Fin P.n × Fin P.n)) (u v : Fin P.n) : ℕ 
 /-- Whether the polygon has an edge from `u` to `v`. -/
 def edgeCount (u v : Fin P.n) : ℕ := if P.next u = v then 1 else 0
 
+/-- The polygon's directed edge count is positive exactly on its cyclic
+successor pairs. -/
+theorem edgeCount_pos_iff (u v : Fin P.n) : 0 < P.edgeCount u v ↔ P.next u = v := by
+  by_cases h : P.next u = v <;> simp [edgeCount, h]
+
+/-- A directed pair is counted among the triangles' sides exactly when some
+triangle in the list contains that directed side. -/
+theorem sideCount_pos_iff (ts : List (Fin P.n × Fin P.n × Fin P.n)) (u v : Fin P.n) :
+    0 < P.sideCount ts u v ↔
+      ∃ t ∈ ts, (t.1, t.2.1) = (u, v) ∨ (t.2.1, t.2.2) = (u, v) ∨
+        (t.2.2, t.1) = (u, v) := by
+  unfold sideCount
+  rw [List.sum_pos_iff_exists_pos_nat]
+  constructor
+  · rintro ⟨s, hs, hspos⟩
+    obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hs
+    by_cases h₁ : (t.1, t.2.1) = (u, v)
+    · exact ⟨t, ht, Or.inl h₁⟩
+    by_cases h₂ : (t.2.1, t.2.2) = (u, v)
+    · exact ⟨t, ht, Or.inr (Or.inl h₂)⟩
+    by_cases h₃ : (t.2.2, t.1) = (u, v)
+    · exact ⟨t, ht, Or.inr (Or.inr h₃)⟩
+    · simp [h₁, h₂, h₃] at hspos
+  · rintro ⟨t, ht, hside⟩
+    refine ⟨_, List.mem_map.mpr ⟨t, ht, rfl⟩, ?_⟩
+    rcases hside with hside | hside | hside <;> simp [hside]
+
 /-- A list of index triangles that triangulates the polygon: every triangle
 counterclockwise, and the directed sides cancelling in pairs except for the
 polygon's edges. -/
@@ -180,6 +207,26 @@ theorem IsTriangulation.sideCount_eq_of_no_edge
     P.sideCount ts u v = P.sideCount ts v u := by
   have hs := h.sides u v
   simpa [edgeCount, huv, hvu] using hs
+
+/-- An internal side of a checked triangulation occurs in one direction
+exactly when it occurs in the other direction. -/
+theorem IsTriangulation.sideCount_pos_iff_reverse_pos_of_no_edge
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (u v : Fin P.n) (huv : P.next u ≠ v) (hvu : P.next v ≠ u) :
+    0 < P.sideCount ts u v ↔ 0 < P.sideCount ts v u := by
+  rw [h.sideCount_eq_of_no_edge u v huv hvu]
+
+/-- The signed difference of triangle-side counts is exactly the signed
+difference of boundary-edge counts. -/
+theorem IsTriangulation.sideCount_difference_eq_edgeCount_difference
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (u v : Fin P.n) :
+    (P.sideCount ts u v : ℤ) - P.sideCount ts v u =
+      (P.edgeCount u v : ℤ) - P.edgeCount v u := by
+  have hs := h.sides u v
+  have hs' : (P.sideCount ts u v : ℤ) + P.edgeCount v u =
+      (P.sideCount ts v u : ℤ) + P.edgeCount u v := by exact_mod_cast hs
+  omega
 
 /-- Every boundary edge occurs one more time in its forward direction than
 in reverse among the sides of a checked triangulation. -/
@@ -217,6 +264,21 @@ theorem IsTriangulation.exists_triangle_side_of_edge
   by_cases h₃' : (t.2.2, t.1) = (u, v)
   · exact Or.inr (Or.inr h₃')
   · simp [h₁, h₂, h₃'] at hspos
+
+/-- Every internal directed side used by a checked triangulation is matched
+by a triangle side in the opposite direction. -/
+theorem IsTriangulation.exists_opposite_triangle_side
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (u v : Fin P.n) (huv : P.next u ≠ v) (hvu : P.next v ≠ u)
+    (hpos : 0 < P.sideCount ts u v) :
+    ∃ t ∈ ts, ((t.1, t.2.1) = (u, v) ∨ (t.2.1, t.2.2) = (u, v) ∨
+      (t.2.2, t.1) = (u, v)) ∧
+      ∃ t' ∈ ts, (t'.1, t'.2.1) = (v, u) ∨ (t'.2.1, t'.2.2) = (v, u) ∨
+        (t'.2.2, t'.1) = (v, u) := by
+  have hrevpos := (h.sideCount_pos_iff_reverse_pos_of_no_edge u v huv hvu).mp hpos
+  obtain ⟨t, ht, hside⟩ := (P.sideCount_pos_iff ts u v).mp hpos
+  obtain ⟨t', ht', hside'⟩ := (P.sideCount_pos_iff ts v u).mp hrevpos
+  exact ⟨t, ht, hside, t', ht', hside'⟩
 
 /-- Every vertex of a polygon with at least three vertices occurs in a
 triangle of any checked triangulation. -/
@@ -353,6 +415,25 @@ theorem IsTriangulation.signedArea2_pos {ts : List (Fin P.n × Fin P.n × Fin P.
     (h : P.IsTriangulation ts) (t : Fin P.n × Fin P.n × Fin P.n) (ht : t ∈ ts) :
     0 < (P.idxTriangle t).signedArea2 := h.isCCW t ht
 
+/-- The signed area of a polygon certified by a triangle list is the sum of
+the signed areas of those triangles. -/
+theorem IsTriangulation.signedArea_eq_sum {ts : List (Fin P.n × Fin P.n × Fin P.n)}
+    (h : P.IsTriangulation ts) :
+    P.signedArea = (ts.map fun t => (P.idxTriangle t).signedArea).sum := by
+  rw [RawPolygon.signedArea, h.signedArea2_eq_sum]
+  simp only [Triangle.signedArea]
+  have hdiv : ∀ l : List ℝ, (l.map fun x => x / 2).sum = l.sum / 2
+      := by
+    intro l
+    induction l with
+    | nil => simp
+    | cons x xs ih =>
+      simp only [List.map_cons, List.sum_cons]
+      rw [ih]
+      ring
+  simpa only [List.map_map, Function.comp_def] using
+    (hdiv (ts.map fun t => (P.idxTriangle t).signedArea2)).symm
+
 /-- Off the lines through two vertices, the winding number counts the
 triangles around the point. -/
 theorem IsTriangulation.windingNumber_eq_count {ts : List (Fin P.n × Fin P.n × Fin P.n)}
@@ -469,6 +550,47 @@ theorem IsTriangulation.mem_region_iff {ts : List (Fin P.n × Fin P.n × Fin P.n
     exact P.isClosed_region.closure_subset_iff.mpr hsub
       (closure_mono (P.dense_offLines.open_subset_closure_inter isOpen_interior) hpt |>
         fun h' => by rwa [closure_closure] at h')
+
+/-- The region of a simple polygon with a checked triangulation is the set of
+points lying in one of its closed index triangles. -/
+theorem IsTriangulation.region_eq_setOf {ts : List (Fin P.n × Fin P.n × Fin P.n)}
+    (h : P.IsTriangulation ts) (hP : P.IsSimple) :
+    P.region = {p | ∃ t ∈ ts, p ∈ (P.idxTriangle t).toSet} := by
+  ext p
+  exact h.mem_region_iff hP
+
+/-- Each closed triangle in a checked triangulation of a simple polygon lies
+inside the polygon's closed region. -/
+theorem IsTriangulation.triangle_subset_region {ts : List (Fin P.n × Fin P.n × Fin P.n)}
+    (h : P.IsTriangulation ts) (hP : P.IsSimple)
+    (t : Fin P.n × Fin P.n × Fin P.n) (ht : t ∈ ts) :
+    (P.idxTriangle t).toSet ⊆ P.region := by
+  intro p hp
+  exact (h.mem_region_iff hP).2 ⟨t, ht, hp⟩
+
+/-- Every vertex of a simple polygon with a checked triangulation belongs to
+the closed region. -/
+theorem IsTriangulation.vertex_mem_region {ts : List (Fin P.n × Fin P.n × Fin P.n)}
+    (h : P.IsTriangulation ts) (hP : P.IsSimple) (u : Fin P.n) :
+    P.vertex u ∈ P.region := by
+  obtain ⟨t, ht, hcorner⟩ := h.exists_triangle_at_vertex hP.three_le u
+  apply (h.mem_region_iff hP).2
+  refine ⟨t, ht, ?_⟩
+  rcases hcorner with ha | hb | hc
+  · rw [← ha]
+    exact (P.idxTriangle t).a_mem_toSet
+  · rw [← hb]
+    exact (P.idxTriangle t).b_mem_toSet
+  · rw [← hc]
+    exact (P.idxTriangle t).c_mem_toSet
+
+/-- The range of the vertex map of a simple polygon with a checked
+triangulation is contained in its closed region. -/
+theorem IsTriangulation.range_vertex_subset_region
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)}
+    (h : P.IsTriangulation ts) (hP : P.IsSimple) : Set.range P.vertex ⊆ P.region := by
+  rintro p ⟨u, rfl⟩
+  exact h.vertex_mem_region hP u
 
 /-! ## Every simple polygon has a triangulation that passes
 

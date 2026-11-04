@@ -41,6 +41,49 @@ theorem square_isTriangulation' : square.IsTriangulation [(0, 1, 3), (1, 2, 3)] 
       norm_num [Triangle.IsCCW, Triangle.signedArea2, idxTriangle, orient_def]
   sides := by decide
 
+/-! ## Further consequences of a checked certificate -/
+
+example : 0 < square.edgeCount 0 1 ↔ square.next 0 = 1 :=
+  square.edgeCount_pos_iff 0 1
+
+example : 0 < square.sideCount [(0, 1, 2), (0, 2, 3)] 0 2 ↔
+    ∃ t : Fin 4 × Fin 4 × Fin 4, t ∈ [(0, 1, 2), (0, 2, 3)] ∧
+      ((t.1, t.2.1) = (0, 2) ∨ (t.2.1, t.2.2) = (0, 2) ∨ (t.2.2, t.1) = (0, 2)) :=
+  square.sideCount_pos_iff [(0, 1, 2), (0, 2, 3)] 0 2
+
+example : 0 < square.sideCount [(0, 1, 2), (0, 2, 3)] 0 2 ↔
+    0 < square.sideCount [(0, 1, 2), (0, 2, 3)] 2 0 := by
+  exact square_isTriangulation.sideCount_pos_iff_reverse_pos_of_no_edge 0 2 (by decide) (by decide)
+
+example : ((square.sideCount [(0, 1, 2), (0, 2, 3)] 0 1 : ℤ) -
+    square.sideCount [(0, 1, 2), (0, 2, 3)] 1 0) =
+    ((square.edgeCount 0 1 : ℤ) - square.edgeCount 1 0) :=
+  square_isTriangulation.sideCount_difference_eq_edgeCount_difference 0 1
+
+example : ∃ t : Fin 4 × Fin 4 × Fin 4, t ∈ [(0, 1, 2), (0, 2, 3)] ∧
+    ((t.1, t.2.1) = (0, 2) ∨ (t.2.1, t.2.2) = (0, 2) ∨ (t.2.2, t.1) = (0, 2)) ∧
+      ∃ t' : Fin 4 × Fin 4 × Fin 4, t' ∈ [(0, 1, 2), (0, 2, 3)] ∧
+        ((t'.1, t'.2.1) = (2, 0) ∨ (t'.2.1, t'.2.2) = (2, 0) ∨
+          (t'.2.2, t'.1) = (2, 0)) := by
+  exact square_isTriangulation.exists_opposite_triangle_side 0 2 (by decide) (by decide) (by decide)
+
+example : square.region = {p | ∃ t ∈ [(0, 1, 2), (0, 2, 3)],
+    p ∈ (square.idxTriangle t).toSet} :=
+  square_isTriangulation.region_eq_setOf square_isSimple
+
+example : (square.idxTriangle (0, 1, 2)).toSet ⊆ square.region :=
+  square_isTriangulation.triangle_subset_region square_isSimple (0, 1, 2) (by simp)
+
+example : square.vertex 0 ∈ square.region :=
+  square_isTriangulation.vertex_mem_region square_isSimple 0
+
+example : Set.range square.vertex ⊆ square.region :=
+  square_isTriangulation.range_vertex_subset_region square_isSimple
+
+example : square.signedArea =
+    ([(0, 1, 2), (0, 2, 3)].map fun t => (square.idxTriangle t).signedArea).sum :=
+  square_isTriangulation.signedArea_eq_sum
+
 /-! ## Combinatorial consequences of the side check -/
 
 example : square.sideCount [(0, 1, 2), (0, 2, 3)] 0 2 =

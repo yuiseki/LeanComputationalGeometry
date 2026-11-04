@@ -436,6 +436,9 @@ mentions the regions, yet for a simple polygon they determine them:
 | Every accepted triangle has three distinct vertices, and a certificate for a polygon with at least three vertices is nonempty | `IsTriangulation`; `3 ≤ n` for nonemptiness | `IsTriangulation.idxTriangle_vertices_ne`, `IsTriangulation.nonempty` |
 | Summing side counts over all vertex pairs gives three times the triangle count; summing edge counts gives the polygon's vertex count | none | `sideCount_sum_eq_three_mul_length`, `edgeCount_sum_eq_n` |
 | Every polygon vertex occurs in a certified triangle, and each certified triangle has positive signed double area; their total signed double area is positive | `IsTriangulation`; `3 ≤ n` for total area | `IsTriangulation.exists_triangle_at_vertex`, `IsTriangulation.signedArea2_pos`, `IsTriangulation.sum_signedArea2_pos` |
+| Positive side counts identify exactly the triangle sides that occur; internal sides occur in both directions, and count differences equal the boundary-edge difference | `IsTriangulation` for balance | `edgeCount_pos_iff`, `sideCount_pos_iff`, `IsTriangulation.sideCount_pos_iff_reverse_pos_of_no_edge`, `IsTriangulation.sideCount_difference_eq_edgeCount_difference`, `IsTriangulation.exists_opposite_triangle_side` |
+| For a simple polygon, the certificate's triangles describe exactly its region, each triangle and every polygon vertex lie in that region | simple | `IsTriangulation.region_eq_setOf`, `IsTriangulation.triangle_subset_region`, `IsTriangulation.vertex_mem_region`, `IsTriangulation.range_vertex_subset_region` |
+| The polygon's signed area is the sum of the certified triangles' signed areas | `IsTriangulation` | `IsTriangulation.signedArea_eq_sum` |
 | The triangles' winding numbers and signed areas add up to the polygon's | `IsTriangulation` | `IsTriangulation.windingNumber_eq_sum`, `IsTriangulation.signedArea2_eq_sum` |
 | Off the lines through two vertices, a dense open set, the winding number counts the triangles around the point | `IsTriangulation` | `dense_offLines`, `isOpen_offLines`, `IsTriangulation.windingNumber_eq_count` |
 | The polygon is counterclockwise | `IsTriangulation`, `3 ≤ n` | `IsTriangulation.polygon_isCCW` |
@@ -502,9 +505,9 @@ triangulations: the square cut along either diagonal, and the comb cut into
 its four tooth tips and a fan of three triangles from the origin through its
 three collinear vertices; two wrong lists for the square, one with
 overlapping triangles and one repeating a triangle, are rejected by `decide`;
-the side-count totals, vertex coverage, triangle orientation and positive
-total area are also exercised; the L has a list of four that passes, and the
-clockwise L none.
+the side-count totals and balance in both directions, region equality,
+triangle and vertex inclusion, and area additivity are also exercised; the L
+has a list of four that passes, and the clockwise L none.
 
 ### On LeanGeospatial's shoelace
 
@@ -674,6 +677,6 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Examples/EarRegion.lean` | worked examples: the region theorems for the square and the L, and the clockwise L |
 | `LeanComputationalGeometry/Examples/TwoEars.lean` | worked examples: two ears of a pentagon, a square with collinear vertices, a comb, the square and the L |
 | `LeanComputationalGeometry/Examples/EarClip.lean` | worked examples: ear clipping the square, the comb and the clockwise L; a flat ring with no ear |
-| `LeanComputationalGeometry/Examples/Certificate.lean` | worked examples: index triangulations of the square and the comb checked, side-count consequences, vertex coverage and area positivity, two wrong lists rejected |
+| `LeanComputationalGeometry/Examples/Certificate.lean` | worked examples: index triangulations of the square and the comb checked, side-count balance, region coverage, vertex inclusion and area additivity, two wrong lists rejected |
 | `LeanComputationalGeometry/Axioms.lean` | the axiom audit |
 | `scripts/joint_check.sh` | the joint check with the sibling libraries |
