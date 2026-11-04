@@ -41,6 +41,39 @@ theorem square_isTriangulation' : square.IsTriangulation [(0, 1, 3), (1, 2, 3)] 
       norm_num [Triangle.IsCCW, Triangle.signedArea2, idxTriangle, orient_def]
   sides := by decide
 
+/-! ## Combinatorial consequences of the side check -/
+
+example : square.sideCount [(0, 1, 2), (0, 2, 3)] 0 2 =
+    square.sideCount [(0, 1, 2), (0, 2, 3)] 2 0 := by decide
+
+example : square.sideCount [(0, 1, 2), (0, 2, 3)] 0 2 =
+    square.sideCount [(0, 1, 2), (0, 2, 3)] 2 0 :=
+  square_isTriangulation.sideCount_eq_of_no_edge 0 2 (by decide) (by decide)
+
+example : square.sideCount [(0, 1, 2), (0, 2, 3)] 0 1 =
+    square.sideCount [(0, 1, 2), (0, 2, 3)] 1 0 + 1 := by decide
+
+example : square.sideCount [(0, 1, 2), (0, 2, 3)] 0 1 =
+    square.sideCount [(0, 1, 2), (0, 2, 3)] 1 0 + 1 := by
+  apply square_isTriangulation.sideCount_eq_reverse_add_one (by decide) 0
+  decide
+
+example : ∃ t : Fin 4 × Fin 4 × Fin 4, t ∈ [(0, 1, 2), (0, 2, 3)] ∧
+    ((t.1, t.2.1) = (0, 1) ∨ (t.2.1, t.2.2) = (0, 1) ∨ (t.2.2, t.1) = (0, 1)) := by decide
+
+example : ∃ t : Fin 4 × Fin 4 × Fin 4, t ∈ [(0, 1, 2), (0, 2, 3)] ∧
+    ((t.1, t.2.1) = (0, 1) ∨ (t.2.1, t.2.2) = (0, 1) ∨ (t.2.2, t.1) = (0, 1)) := by
+  exact square_isTriangulation.exists_triangle_side_of_edge (by decide) 0 1 (by decide)
+
+example (t : Fin 4 × Fin 4 × Fin 4) (ht : t ∈ [(0, 1, 2), (0, 2, 3)]) :
+    (square.idxTriangle t).a ≠ (square.idxTriangle t).b ∧
+      (square.idxTriangle t).b ≠ (square.idxTriangle t).c ∧
+      (square.idxTriangle t).c ≠ (square.idxTriangle t).a := by
+  exact square_isTriangulation.idxTriangle_vertices_ne t ht
+
+example : [(0, 1, 2), (0, 2, 3)] ≠ ([] : List (Fin 4 × Fin 4 × Fin 4)) := by
+  exact square_isTriangulation.nonempty (by decide : 3 ≤ square.n)
+
 example (p : Point2D) : p ∈ square.region ↔
     ∃ t ∈ [((0 : Fin 4), (1 : Fin 4), (2 : Fin 4)), (0, 2, 3)], p ∈ (square.idxTriangle t).toSet :=
   square_isTriangulation.mem_region_iff square_isSimple

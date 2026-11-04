@@ -172,6 +172,88 @@ structure IsTriangulation (ts : List (Fin P.n × Fin P.n × Fin P.n)) : Prop whe
 
 variable {P}
 
+/-- Away from the polygon boundary, each directed side occurs as often in
+each direction in a checked triangulation. -/
+theorem IsTriangulation.sideCount_eq_of_no_edge
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (u v : Fin P.n) (huv : P.next u ≠ v) (hvu : P.next v ≠ u) :
+    P.sideCount ts u v = P.sideCount ts v u := by
+  have hs := h.sides u v
+  simpa [edgeCount, huv, hvu] using hs
+
+/-- Every boundary edge occurs one more time in its forward direction than
+in reverse among the sides of a checked triangulation. -/
+theorem IsTriangulation.sideCount_eq_reverse_add_one
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (h3 : 3 ≤ P.n) (u v : Fin P.n) (huv : P.next u = v) :
+    P.sideCount ts u v = P.sideCount ts v u + 1 := by
+  have hrev : P.next v ≠ u := by
+    intro hrev
+    have hcycle : P.next (P.next u) ≠ u :=
+      P.iterate_next_ne u (k := 2) (by norm_num) h3
+    exact hcycle (by rw [huv, hrev])
+  have hs := h.sides u v
+  simp only [edgeCount, huv, hrev, ↓reduceIte] at hs
+  omega
+
+/-- Each forward boundary edge is represented by at least one directed side
+of a triangle in a checked triangulation. -/
+theorem IsTriangulation.exists_triangle_side_of_edge
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (h3 : 3 ≤ P.n) (u v : Fin P.n) (huv : P.next u = v) :
+    ∃ t ∈ ts, (t.1, t.2.1) = (u, v) ∨ (t.2.1, t.2.2) = (u, v) ∨
+      (t.2.2, t.1) = (u, v) := by
+  have hcount := h.sideCount_eq_reverse_add_one h3 u v huv
+  have hpos : 0 < P.sideCount ts u v := by omega
+  unfold sideCount at hpos
+  rw [List.sum_pos_iff_exists_pos_nat] at hpos
+  obtain ⟨s, hs, hspos⟩ := hpos
+  obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hs
+  refine ⟨t, ht, ?_⟩
+  by_cases h₁ : (t.1, t.2.1) = (u, v)
+  · exact Or.inl h₁
+  by_cases h₂ : (t.2.1, t.2.2) = (u, v)
+  · exact Or.inr (Or.inl h₂)
+  by_cases h₃' : (t.2.2, t.1) = (u, v)
+  · exact Or.inr (Or.inr h₃')
+  · simp [h₁, h₂, h₃'] at hspos
+
+/-- The three vertices of every triangle in a checked triangulation are
+pairwise distinct, since its signed double area is positive. -/
+theorem IsTriangulation.idxTriangle_vertices_ne
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (t : Fin P.n × Fin P.n × Fin P.n) (ht : t ∈ ts) :
+    (P.idxTriangle t).a ≠ (P.idxTriangle t).b ∧
+      (P.idxTriangle t).b ≠ (P.idxTriangle t).c ∧
+      (P.idxTriangle t).c ≠ (P.idxTriangle t).a := by
+  rcases t with ⟨a, b, c⟩
+  change (P.vertex a ≠ P.vertex b) ∧ (P.vertex b ≠ P.vertex c) ∧
+    (P.vertex c ≠ P.vertex a)
+  have hccw := h.isCCW (a, b, c) ht
+  change 0 < orient (P.vertex a) (P.vertex b) (P.vertex c) at hccw
+  refine ⟨?_, ?_, ?_⟩
+  · intro hab
+    rw [hab] at hccw
+    simp at hccw
+  · intro hbc
+    rw [hbc] at hccw
+    simp at hccw
+  · intro hca
+    rw [hca] at hccw
+    simp at hccw
+
+/-- A checked triangulation of a polygon with at least three vertices is
+nonempty. -/
+theorem IsTriangulation.nonempty
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (h3 : 3 ≤ P.n) : ts ≠ [] := by
+  intro hnil
+  subst ts
+  set u : Fin P.n := ⟨0, by omega⟩
+  have hs := h.sides u (P.next u)
+  have h2 : P.next (P.next u) ≠ u := P.iterate_next_ne u (k := 2) (by norm_num) h3
+  simp [sideCount, edgeCount, h2] at hs
+
 open scoped Classical
 
 theorem sum_map_sides {M : Type*} [AddCommMonoid M] (g : Fin P.n → Fin P.n → M) :

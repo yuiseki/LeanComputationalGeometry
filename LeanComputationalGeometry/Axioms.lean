@@ -1024,6 +1024,26 @@ builds it.
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.RawPolygon.IsTriangulation.signedArea2_eq_sum
 
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.sideCount_eq_of_no_edge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.sideCount_eq_of_no_edge
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.sideCount_eq_reverse_add_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.sideCount_eq_reverse_add_one
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.exists_triangle_side_of_edge' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.exists_triangle_side_of_edge
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.idxTriangle_vertices_ne' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.idxTriangle_vertices_ne
+
+/-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.nonempty' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ComputationalGeometry.RawPolygon.IsTriangulation.nonempty
+
 /-- info: 'ComputationalGeometry.RawPolygon.IsTriangulation.windingNumber_eq_count' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComputationalGeometry.RawPolygon.IsTriangulation.windingNumber_eq_count
