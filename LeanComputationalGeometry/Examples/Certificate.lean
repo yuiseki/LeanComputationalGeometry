@@ -104,6 +104,25 @@ theorem comb_isTriangulation : comb.IsTriangulation combTriangles where
       norm_num [Triangle.IsCCW, Triangle.signedArea2, idxTriangle, orient_def]
   sides := by decide
 
+/-! ## Aggregate counts and orientation -/
+
+example : (∑ u : Fin 9, ∑ v : Fin 9, comb.sideCount combTriangles u v) =
+    3 * combTriangles.length :=
+  comb.sideCount_sum_eq_three_mul_length combTriangles
+
+example : (∑ u : Fin 9, ∑ v : Fin 9, comb.edgeCount u v) = comb.n :=
+  comb.edgeCount_sum_eq_n
+
+example : ∃ t ∈ combTriangles, t.1 = 0 ∨ t.2.1 = 0 ∨ t.2.2 = 0 :=
+  comb_isTriangulation.exists_triangle_at_vertex (by decide) 0
+
+example (t : Fin 9 × Fin 9 × Fin 9) (ht : t ∈ combTriangles) :
+    0 < (comb.idxTriangle t).signedArea2 :=
+  comb_isTriangulation.signedArea2_pos t ht
+
+example : 0 < (combTriangles.map fun t => (comb.idxTriangle t).signedArea2).sum :=
+  comb_isTriangulation.sum_signedArea2_pos (by decide)
+
 example (p : Point2D) : p ∈ comb.region ↔ ∃ t ∈ combTriangles, p ∈ (comb.idxTriangle t).toSet :=
   comb_isTriangulation.mem_region_iff comb_isSimple
 

@@ -218,6 +218,19 @@ theorem IsTriangulation.exists_triangle_side_of_edge
   · exact Or.inr (Or.inr h₃')
   · simp [h₁, h₂, h₃'] at hspos
 
+/-- Every vertex of a polygon with at least three vertices occurs in a
+triangle of any checked triangulation. -/
+theorem IsTriangulation.exists_triangle_at_vertex
+    {ts : List (Fin P.n × Fin P.n × Fin P.n)} (h : P.IsTriangulation ts)
+    (h3 : 3 ≤ P.n) (u : Fin P.n) :
+    ∃ t ∈ ts, t.1 = u ∨ t.2.1 = u ∨ t.2.2 = u := by
+  obtain ⟨t, ht, hside⟩ := h.exists_triangle_side_of_edge h3 u (P.next u) rfl
+  refine ⟨t, ht, ?_⟩
+  rcases hside with hside | hside | hside
+  · exact Or.inl (Prod.mk.inj hside).1
+  · exact Or.inr (Or.inl (Prod.mk.inj hside).1)
+  · exact Or.inr (Or.inr (Prod.mk.inj hside).1)
+
 /-- The three vertices of every triangle in a checked triangulation are
 pairwise distinct, since its signed double area is positive. -/
 theorem IsTriangulation.idxTriangle_vertices_ne
@@ -275,6 +288,19 @@ theorem sum_edges_eq_sum_edgeCount {M : Type*} [AddCommMonoid M] (g : Fin P.n �
     ∑ i, g i (P.next i) = ∑ u, ∑ v, P.edgeCount u v • g u v := by
   simp [edgeCount, ite_smul]
 
+/-- Across all ordered vertex pairs, each triangle contributes its three
+directed sides to the side count. -/
+theorem sideCount_sum_eq_three_mul_length (ts : List (Fin P.n × Fin P.n × Fin P.n)) :
+    (∑ u, ∑ v, P.sideCount ts u v) = 3 * ts.length := by
+  calc
+    _ = ts.length * 3 := by simpa using (sum_map_sides (P := P) (g := fun _ _ => (1 : ℕ)) ts).symm
+    _ = 3 * ts.length := by omega
+
+/-- Across all ordered vertex pairs, the polygon has exactly one counted
+directed edge per vertex. -/
+theorem edgeCount_sum_eq_n : (∑ u, ∑ v, P.edgeCount u v) = P.n := by
+  simpa using (sum_edges_eq_sum_edgeCount (P := P) (g := fun _ _ => (1 : ℕ))).symm
+
 /-- A sum over directed edges, of a function that changes sign with the
 direction, is the same over the triangles' sides as over the polygon's edges. -/
 theorem IsTriangulation.sum_sides_eq {ts : List (Fin P.n × Fin P.n × Fin P.n)}
@@ -321,6 +347,12 @@ theorem IsTriangulation.signedArea2_eq_sum {ts : List (Fin P.n × Fin P.n × Fin
   rw [Triangle.signedArea2_eq_cross_sum]
   rfl
 
+/-- Every triangle in a checked triangulation has positive signed double
+area. -/
+theorem IsTriangulation.signedArea2_pos {ts : List (Fin P.n × Fin P.n × Fin P.n)}
+    (h : P.IsTriangulation ts) (t : Fin P.n × Fin P.n × Fin P.n) (ht : t ∈ ts) :
+    0 < (P.idxTriangle t).signedArea2 := h.isCCW t ht
+
 /-- Off the lines through two vertices, the winding number counts the
 triangles around the point. -/
 theorem IsTriangulation.windingNumber_eq_count {ts : List (Fin P.n × Fin P.n × Fin P.n)}
@@ -346,6 +378,14 @@ theorem IsTriangulation.polygon_isCCW {ts : List (Fin P.n × Fin P.n × Fin P.n)
   refine List.sum_pos _ (fun x hx => ?_) (by simpa using hne)
   obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hx
   exact h.isCCW t ht
+
+/-- The sum of the signed double areas in a checked triangulation of a
+polygon with at least three vertices is positive. -/
+theorem IsTriangulation.sum_signedArea2_pos {ts : List (Fin P.n × Fin P.n × Fin P.n)}
+    (h : P.IsTriangulation ts) (h3 : 3 ≤ P.n) :
+    0 < (ts.map fun t => (P.idxTriangle t).signedArea2).sum := by
+  rw [← h.signedArea2_eq_sum]
+  exact h.polygon_isCCW h3
 
 /-- Open sets one of which at most contains each point of a dense set do not
 overlap. -/

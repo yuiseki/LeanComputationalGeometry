@@ -434,6 +434,8 @@ mentions the regions, yet for a simple polygon they determine them:
 | Away from boundary edges, side counts in both directions agree; on a boundary edge, the forward count exceeds the reverse count by one | `IsTriangulation`; `3 ≤ n` for a boundary edge | `IsTriangulation.sideCount_eq_of_no_edge`, `IsTriangulation.sideCount_eq_reverse_add_one` |
 | Every polygon boundary edge occurs as a directed side of some certified triangle | `IsTriangulation`, `3 ≤ n` | `IsTriangulation.exists_triangle_side_of_edge` |
 | Every accepted triangle has three distinct vertices, and a certificate for a polygon with at least three vertices is nonempty | `IsTriangulation`; `3 ≤ n` for nonemptiness | `IsTriangulation.idxTriangle_vertices_ne`, `IsTriangulation.nonempty` |
+| Summing side counts over all vertex pairs gives three times the triangle count; summing edge counts gives the polygon's vertex count | none | `sideCount_sum_eq_three_mul_length`, `edgeCount_sum_eq_n` |
+| Every polygon vertex occurs in a certified triangle, and each certified triangle has positive signed double area; their total signed double area is positive | `IsTriangulation`; `3 ≤ n` for total area | `IsTriangulation.exists_triangle_at_vertex`, `IsTriangulation.signedArea2_pos`, `IsTriangulation.sum_signedArea2_pos` |
 | The triangles' winding numbers and signed areas add up to the polygon's | `IsTriangulation` | `IsTriangulation.windingNumber_eq_sum`, `IsTriangulation.signedArea2_eq_sum` |
 | Off the lines through two vertices, a dense open set, the winding number counts the triangles around the point | `IsTriangulation` | `dense_offLines`, `isOpen_offLines`, `IsTriangulation.windingNumber_eq_count` |
 | The polygon is counterclockwise | `IsTriangulation`, `3 ≤ n` | `IsTriangulation.polygon_isCCW` |
@@ -500,9 +502,9 @@ triangulations: the square cut along either diagonal, and the comb cut into
 its four tooth tips and a fan of three triangles from the origin through its
 three collinear vertices; two wrong lists for the square, one with
 overlapping triangles and one repeating a triangle, are rejected by `decide`;
-the new side-count consequences, boundary-edge representation, distinct
-triangle vertices and nonemptiness are also exercised; the L has a list of
-four that passes, and the clockwise L none.
+the side-count totals, vertex coverage, triangle orientation and positive
+total area are also exercised; the L has a list of four that passes, and the
+clockwise L none.
 
 ### On LeanGeospatial's shoelace
 
@@ -672,6 +674,6 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Examples/EarRegion.lean` | worked examples: the region theorems for the square and the L, and the clockwise L |
 | `LeanComputationalGeometry/Examples/TwoEars.lean` | worked examples: two ears of a pentagon, a square with collinear vertices, a comb, the square and the L |
 | `LeanComputationalGeometry/Examples/EarClip.lean` | worked examples: ear clipping the square, the comb and the clockwise L; a flat ring with no ear |
-| `LeanComputationalGeometry/Examples/Certificate.lean` | worked examples: index triangulations of the square and the comb checked, side-count consequences and boundary-edge representation, two wrong lists rejected |
+| `LeanComputationalGeometry/Examples/Certificate.lean` | worked examples: index triangulations of the square and the comb checked, side-count consequences, vertex coverage and area positivity, two wrong lists rejected |
 | `LeanComputationalGeometry/Axioms.lean` | the axiom audit |
 | `scripts/joint_check.sh` | the joint check with the sibling libraries |
