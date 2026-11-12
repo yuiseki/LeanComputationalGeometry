@@ -92,3 +92,6 @@ machine, set `LEAN_NUM_THREADS` low.
 - Identifiers, docstrings, commit messages and the README are in English.
 - `README.md` is the reference: keep its theorem tables, trust boundary and
   roadmap in step with the code.
+- `docs/LEAN_RS.md` records why no definition here can be compiled to Rust
+  with lean-rs yet. If you add a computable definition on types lean-rs
+  carries, list it there with the theorems that describe it.

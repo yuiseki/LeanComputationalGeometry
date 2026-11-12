@@ -532,6 +532,11 @@ Mathlib. It does not check:
 - external data: a ring that a file claims is simple is a `RawPolygon` until
   `IsSimple` is proved for it.
 
+Nothing here is compiled to Rust. Why lean-rs cannot export these
+definitions as they stand (they are over `ℝ`, or choose by
+`Classical.choice`), and what a port would need, is in
+[docs/LEAN_RS.md](docs/LEAN_RS.md).
+
 ## Roadmap
 
 | Step | Status |
@@ -680,3 +685,4 @@ import its examples, and runs the joint check against the sibling libraries.
 | `LeanComputationalGeometry/Examples/Certificate.lean` | worked examples: index triangulations of the square and the comb checked, side-count balance, region coverage, vertex inclusion and area additivity, two wrong lists rejected |
 | `LeanComputationalGeometry/Axioms.lean` | the axiom audit |
 | `scripts/joint_check.sh` | the joint check with the sibling libraries |
+| `docs/LEAN_RS.md` | what lean-rs could compile to Rust, and why nothing qualifies yet |
